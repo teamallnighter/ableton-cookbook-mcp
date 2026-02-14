@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ableton Cookbook - Setup Wizard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎛️ The Ableton Cookbook</h1>
+            <p class="subtitle">AI-Powered Music Production Workflows</p>
+        </header>
+
+        <div class="wizard">
+            <!-- Step 1: Welcome -->
+            <div class="step active" id="step-welcome">
+                <h2>Welcome!</h2>
+                <p>This wizard will set up The Ableton Cookbook on your system.</p>
+                <div class="info-box">
+                    <h3>What gets installed:</h3>
+                    <ul>
+                        <li>✓ MCP Server (via npm)</li>
+                        <li>✓ Claude Desktop integration</li>
+                        <li>✓ Python version control scripts</li>
+                        <li>✓ PHP rack analyzers</li>
+                    </ul>
+                </div>
+                <p class="note">⏱️ Estimated time: 5 minutes</p>
+                <button class="btn btn-primary" onclick="nextStep()">Get Started</button>
+            </div>
+
+            <!-- Step 2: Detect Ableton -->
+            <div class="step" id="step-ableton">
+                <h2>Detect Ableton Live</h2>
+                <p>Checking for Ableton Live installation...</p>
+                <div class="detection-result" id="ableton-result">
+                    <div class="spinner"></div>
+                    <p>Scanning...</p>
+                </div>
+                <button class="btn btn-secondary" onclick="manualPath()" style="display:none;" id="btn-manual">
+                    Specify Custom Path
+                </button>
+                <button class="btn btn-primary" onclick="nextStep()" style="display:none;" id="btn-ableton-next">
+                    Continue
+                </button>
+            </div>
+
+            <!-- Step 3: Install MCP -->
+            <div class="step" id="step-mcp">
+                <h2>Install MCP Server</h2>
+                <p>Installing ableton-cookbook-mcp from npm...</p>
+                <div class="progress-box">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    <p class="progress-text" id="progress-text">Preparing...</p>
+                </div>
+                <pre class="log" id="install-log"></pre>
+            </div>
+
+            <!-- Step 4: Configure Claude -->
+            <div class="step" id="step-claude">
+                <h2>Configure Claude Desktop</h2>
+                <p>Setting up MCP integration with Claude...</p>
+                <div class="detection-result" id="claude-result">
+                    <div class="spinner"></div>
+                    <p>Checking Claude Desktop installation...</p>
+                </div>
+                <div class="config-preview" id="config-preview" style="display:none;">
+                    <h3>Configuration:</h3>
+                    <pre id="config-content"></pre>
+                </div>
+                <button class="btn btn-primary" onclick="writeClaudeConfig()" style="display:none;" id="btn-write-config">
+                    Apply Configuration
+                </button>
+                <button class="btn btn-primary" onclick="nextStep()" style="display:none;" id="btn-claude-next">
+                    Continue
+                </button>
+            </div>
+
+            <!-- Step 5: Complete -->
+            <div class="step" id="step-complete">
+                <h2>🎉 Setup Complete!</h2>
+                <p>The Ableton Cookbook is installed and ready to use.</p>
+                <div class="success-box">
+                    <h3>Next Steps:</h3>
+                    <ol>
+                        <li>Restart Claude Desktop</li>
+                        <li>Open Ableton Live</li>
+                        <li>Ask Claude: "What tracks are in my current set?"</li>
+                        <li>Start exploring your production workflow!</li>
+                    </ol>
+                </div>
+                <div class="links">
+                    <a href="#" onclick="openDocs()">📖 View Documentation</a>
+                    <a href="#" onclick="openGitHub()">💻 GitHub Repository</a>
+                    <a href="#" onclick="openDiscussions()">💬 Join Community</a>
+                </div>
+                <button class="btn btn-primary" onclick="finish()">Close</button>
+            </div>
+        </div>
+
+        <div class="step-indicator">
+            <div class="step-dot active" data-step="0"></div>
+            <div class="step-dot" data-step="1"></div>
+            <div class="step-dot" data-step="2"></div>
+            <div class="step-dot" data-step="3"></div>
+            <div class="step-dot" data-step="4"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+{
+    "name": "ableton-cookbook-desktop",
+    "version": "0.1.0",
+    "description": "The Ableton Cookbook - Desktop Installer & Setup Wizard",
+    "main": "src/main/index.js",
+    "scripts": {
+        "start": "electron .",
+        "dev": "electron . --dev",
+        "build": "electron-builder",
+        "build:mac": "electron-builder --mac",
+        "build:win": "electron-builder --win",
+        "pack": "electron-builder --dir"
+    },
+    "keywords": [
+        "ableton",
+        "music-production",
+        "installer",
+        "mcp"
+    ],
+    "author": "Team All Nighter",
+    "license": "MIT",
+    "devDependencies": {
+        "electron": "^28.0.0",
+        "electron-builder": "^24.9.1"
+    },
+    "dependencies": {
+        "electron-store": "^8.1.0",
+        "node-machine-id": "^1.1.12",
+        "chokidar": "^3.5.3"
+    },
+    "build": {
+        "appId": "com.abletonCookbook.desktop",
+        "productName": "Ableton Cookbook",
+        "mac": {
+            "category": "public.app-category.music",
+            "target": [
+                "dmg",
+                "zip"
+            ],
+            "icon": "assets/icon.icns"
+        },
+        "dmg": {
+            "title": "Install Ableton Cookbook",
+            "icon": "assets/icon.icns",
+            "window": {
+                "width": 540,
+                "height": 380
+            }
+        },
+        "win": {
+            "target": [
+                "nsis"
+            ],
+            "icon": "assets/icon.ico"
+        },
+        "files": [
+            "src/**/*",
+            "assets/**/*"
+        ],
+        "directories": {
+            "buildResources": "assets"
+        }
+    }
+}
