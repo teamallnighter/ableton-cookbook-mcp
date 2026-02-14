@@ -81,3 +81,6 @@ packages/desktop-app/dist/
 # MCP specific
 mcp-server.log
 watcher.log
+
+# AI/Claude context files
+.claude/
