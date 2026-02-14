@@ -20,28 +20,30 @@
     "author": "Team All Nighter",
     "license": "MIT",
     "devDependencies": {
+        "7zip-bin": "^5.2.0",
         "electron": "^28.0.0",
         "electron-builder": "^24.9.1"
     },
     "dependencies": {
+        "chokidar": "^3.5.3",
         "electron-store": "^8.1.0",
-        "node-machine-id": "^1.1.12",
-        "chokidar": "^3.5.3"
+        "node-machine-id": "^1.1.12"
     },
     "build": {
         "appId": "com.abletonCookbook.desktop",
         "productName": "Ableton Cookbook",
+        "electronVersion": "28.3.3",
         "mac": {
             "category": "public.app-category.music",
             "target": [
                 "dmg",
                 "zip"
             ],
-            "icon": "assets/icon.icns"
+            "icon": "assets/ABLCB.icns"
         },
         "dmg": {
             "title": "Install Ableton Cookbook",
-            "icon": "assets/icon.icns",
+            "icon": "assets/ABLCB.icns",
             "window": {
                 "width": 540,
                 "height": 380
