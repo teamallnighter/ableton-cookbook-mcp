@@ -1,6 +1,13 @@
-# M4L-MCP: Ableton Live Ecosystem
+# 🎛️ The Ableton Cookbook - MCP Server
 
-**The Ableton Cookbook Project** - A comprehensive ecosystem for Ableton Live workflow analysis, version control, and collective knowledge sharing.
+[![CI/CD](https://github.com/teamallnighter/ableton-cookbook-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/teamallnighter/ableton-cookbook-mcp/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
+[![Documentation](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://teamallnighter.github.io/ableton-cookbook-mcp/)
+
+**Share and discover Ableton Live production recipes** - A Model Context Protocol (MCP) server that bridges AI assistants with Ableton Live, enabling version control, rack analysis, and real-time control for music production workflows.
+
+🌐 **[View Documentation](https://teamallnighter.github.io/ableton-cookbook-mcp/)** | 📖 **[Contributing Guide](CONTRIBUTING.md)** | 🗺️ **[Vision & Roadmap](.claude/VISION_AND_ROADMAP.md)**
 
 This project enables AI assistants to interact with Ableton Live through the Model Context Protocol (MCP), combining real-time control, offline analysis, version tracking, and rack parsing into a unified workflow intelligence system.
 
@@ -14,33 +21,44 @@ Think **Spotify Wrapped meets Stack Overflow for music production**. A platform 
 
 ## Project Structure
 
+**Mono-repo with npm workspaces:**
+
 ```
-M4L-MCP/
-├── .claude/               # Project context for AI assistants
+ableton-cookbook-mcp/
+├── packages/
+│   ├── mcp-server/            # TypeScript MCP Server 🟢 ACTIVE
+│   │   ├── src/
+│   │   │   ├── index.ts       # Main MCP server (16 tools)
+│   │   │   ├── archivist.ts   # Offline .als parsing
+│   │   │   ├── operator.ts    # Real-time Live control
+│   │   │   ├── historian.ts   # Version control bridge
+│   │   │   └── analyzer.ts    # Rack/preset analysis bridge
+│   │   └── dist/              # Compiled JavaScript
+│   │
+│   ├── python-scripts/        # Version Control System 🟢 ACTIVE
+│   │   ├── ableton_version_manager.py
+│   │   ├── ableton_visualizer.py
+│   │   └── ableton_diff.py
+│   │
+│   └── php-analyzers/         # Rack/Preset Parsers 🟢 ACTIVE
+│       ├── abletonRackAnalyzer/
+│       ├── abletonDrumRackAnalyzer/
+│       ├── abletonPresetAnalyzer/
+│       └── abletonSessionAnalyzer/
+│
+├── .claude/                   # AI context & planning docs
 │   ├── PROJECT_CONTEXT.md
 │   ├── ARCHITECTURE.md
-│   └── DEVELOPMENT.md
+│   ├── VISION_AND_ROADMAP.md
+│   └── WEEK_1_IMPLEMENTATION.md
 │
-├── src/                   # MCP Server (Node.js/TypeScript)
-│   ├── index.ts          # Main MCP server
-│   ├── archivist.ts      # Offline .als parsing
-│   ├── operator.ts       # Real-time Live control
-│   ├── historian.ts      # Version control bridge
-│   └── analyzer.ts       # Rack/preset analysis bridge
+├── docs/                      # GitHub Pages documentation
+├── .github/
+│   ├── workflows/             # CI/CD automation
+│   └── ISSUE_TEMPLATE/        # Bug/feature templates
 │
-├── python-scripts/        # Version Control System
-│   ├── ableton_version_manager.py
-│   ├── ableton_visualizer.py
-│   └── ableton_diff.py
-│
-├── analyzers/             # PHP Rack/Preset Parsers
-│   ├── abletonRackAnalyzer/
-│   ├── abletonDrumRackAnalyzer/
-│   ├── abletonPresetAnalyzer/
-│   └── abletonSessionAnalyzer/
-│
-└── cookbook-website/      # Laravel Web Platform (symlink)
-    └── → /Volumes/BassDaddy/projects/abletonCookbook/abletonCookbookPHP
+└── cookbook-website/          # Laravel Web Platform (symlink)
+    └── → (External Laravel project)
 ```
 
 ## Features
@@ -82,45 +100,53 @@ This server uses the `ableton-js` library to communicate with Live. For this to 
 1.  Locate the `node_modules/ableton-js/midi-script` folder in this project (after running `npm install`).
 2.  Copy the `AbletonJS` folder to your Ableton Live "MIDI Remote Scripts" directory:
     *   **macOS:** `/Applications/Ableton Live 11 Suite.app/Contents/App-Resources/MIDI Remote Scripts/`
-    *   **Windows:** `C:\ProgramData\Ableton\Live 11 Suite\Resources\MIDI Remote Scripts\`
-3.  Restart Ableton Live.
-4.  Open **Preferences > Link/Tempo/MIDI**.
-5.  Select **AbletonJS** as a Control Surface.
+   Quick Start
 
-### 3. Python 3 (For Version Control)
-The Historian module requires Python 3.7+ to analyze version history. The Python scripts are located at `python-scripts/` (configurable in `src/historian.ts`).
-
-### 4. PHP (For Rack & Preset Analysis)
-The Analyzer module requires PHP 7.4+ to parse Ableton rack and preset files. The PHP analyzer scripts are located in `analyzers/` directory.
-
-## Installation
+### Installation
 
 ```bash
+# Clone the repository
+git clone https://github.com/teamallnighter/ableton-cookbook-mcp.git
+cd ableton-cookbook-mcp
+
+# Install and build MCP server
+cd packages/mcp-server
 npm install
 npm run build
 ```
 
-## Usage
+### Configure Claude Desktop
 
-To start the server stdio transport:
-
-```bash
-npm start
-```
-
-## Development
-
-Run in watch mode:
-
-```bash
-npm run dev
-```
-
-## MCP Configuration
-
-Add this server to your Claude Desktop configuration (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ```json
+{
+  "mcpServers": {
+    "ableton": {
+      "command": "node",
+      "args": ["/ABSOLUTE/PATH/TO/ableton-cookbook-mcp/packages/mcp-server/dist/index.js"]
+    }
+  }
+}
+```
+
+**Restart Claude Desktop** and you'll see 16 Ableton tools available! 🎉
+
+### Development
+
+```bash
+cd packages/mcp-server
+
+# Watch mode (auto-rebuild on changes)
+npm run watch
+
+# Lint and format
+npm run lint
+npm run format
+
+# Manual build
+npm run build
+```
 {
   "mcpServers": {
     "ableton-live": {
@@ -159,6 +185,52 @@ After adding the configuration, restart Claude Desktop.
 - **scan_user_library** - Index all racks, drum racks, and presets in User Library
 - **search_racks_by_device** - Find racks containing specific devices (e.g., "Serum")
 
+
+## Contributing
+
+We welcome contributions! Whether you're a producer, developer, or both - your input helps make this tool better for the music production community.
+
+**Ways to contribute:**
+- 🐛 [Report bugs](https://github.com/teamallnighter/ableton-cookbook-mcp/issues/new?template=bug_report.yml)
+- ✨ [Request features](https://github.com/teamallnighter/ableton-cookbook-mcp/issues/new?template=feature_request.yml)
+- 📚 Improve documentation
+- 🔧 Submit pull requests
+- 💬 [Join discussions](https://github.com/teamallnighter/ableton-cookbook-mcp/discussions)
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+
+## Documentation
+
+- 📖 **[Full Documentation](https://teamallnighter.github.io/ableton-cookbook-mcp/)** - Setup guides and examples
+- 🏗️ **[Architecture](.claude/ARCHITECTURE.md)** - Technical design and data models
+- 🗺️ **[Vision & Roadmap](.claude/VISION_AND_ROADMAP.md)** - Product vision and future plans
+- 🔧 **[Development Guide](.claude/DEVELOPMENT.md)** - Setup, debugging, and testing
+- 📋 **[Project Context](.claude/PROJECT_CONTEXT.md)** - Complete project overview
+
+## Roadmap
+
+- [x] **Phase 1: Proof of Concept** - MCP server with 16 tools ✅
+- [ ] **Phase 2: Easy Setup** - Desktop installer for non-technical users
+- [ ] **Phase 3: Community** - Web platform for sharing workflow recipes
+- [ ] **Phase 4: Discovery** - Search, recommendations, and integrations
+
+See [VISION_AND_ROADMAP.md](.claude/VISION_AND_ROADMAP.md) for detailed plans.
+
+## License
+
+MIT License - see [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+Built with:
+- [Model Context Protocol](https://modelcontextprotocol.io/) by Anthropic
+- [ableton-js](https://github.com/leolabs/ableton-js) by Leo Bernard
+- Love for music production 🎵
+
+---
+
+**Made with 🎵 by [Team All Nighter](https://github.com/teamallnighter)**  
+*For producers who code at 3am*
 ## Example Usage
 
 Once configured, you can ask Claude:

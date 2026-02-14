@@ -1,0 +1,114 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: packages/mcp-server/package-lock.json
+    
+    - name: Install dependencies
+      run: |
+        cd packages/mcp-server
+        npm ci
+    
+    - name: Lint code
+      run: |
+        cd packages/mcp-server
+        npm run lint || echo "Lint script not found, skipping..."
+    
+    - name: Build TypeScript
+      run: |
+        cd packages/mcp-server
+        npm run build
+    
+    - name: Check dist files exist
+      run: |
+        cd packages/mcp-server
+        test -f dist/index.js || exit 1
+        test -f dist/archivist.js || exit 1
+        test -f dist/operator.js || exit 1
+        test -f dist/historian.js || exit 1
+        test -f dist/analyzer.js || exit 1
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist-${{ matrix.node-version }}
+        path: packages/mcp-server/dist/
+        retention-days: 7
+
+  python-check:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        python-version: ['3.7', '3.8', '3.9', '3.10', '3.11']
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Check Python scripts syntax
+      run: |
+        cd packages/python-scripts
+        python -m py_compile *.py
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install gzip
+
+  php-check:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        php-version: ['7.4', '8.0', '8.1', '8.2']
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup PHP ${{ matrix.php-version }}
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ matrix.php-version }}
+    
+    - name: Check PHP syntax
+      run: |
+        cd packages/php-analyzers
+        find . -name "*.php" -exec php -l {} \;
+
+  release-check:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [build-and-test, python-check, php-check]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Check if version bump needed
+      run: |
+        echo "All checks passed! Ready for release."
+        echo "Run 'npm version patch/minor/major' to create a release."

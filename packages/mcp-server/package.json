@@ -1,14 +1,20 @@
 {
-    "name": "ableton-live-mcp",
-    "version": "1.0.0",
-    "description": "A Model Context Protocol server for interactions with Ableton Live",
+    "name": "@ableton-cookbook/mcp-server",
+    "version": "0.1.0",
+    "description": "MCP server for Ableton Live - Version control, rack analysis & real-time control for AI-powered music production",
     "main": "dist/index.js",
     "type": "module",
+    "bin": {
+        "ableton-cookbook-mcp": "dist/index.js"
+    },
     "scripts": {
         "build": "tsc",
         "start": "node dist/index.js",
         "watch": "tsc --watch",
-        "dev": "tsc --watch"
+        "dev": "tsc --watch",
+        "lint": "eslint src/**/*.ts",
+        "format": "prettier --write src/**/*.ts",
+        "prepublishOnly": "npm run build"
     },
     "dependencies": {
         "@modelcontextprotocol/sdk": "^0.6.0",
@@ -28,5 +34,34 @@
         "eslint-config-prettier": "^10.1.8",
         "prettier": "^3.8.1",
         "typescript": "^5.3.3"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/teamallnighter/ableton-cookbook-mcp.git",
+        "directory": "packages/mcp-server"
+    },
+    "keywords": [
+        "ableton",
+        "ableton-live",
+        "mcp",
+        "model-context-protocol",
+        "music-production",
+        "daw",
+        "ai",
+        "version-control",
+        "claude",
+        "anthropic"
+    ],
+    "author": "Team All Nighter",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/teamallnighter/ableton-cookbook-mcp/issues"
+    },
+    "homepage": "https://github.com/teamallnighter/ableton-cookbook-mcp#readme",
+    "publishConfig": {
+        "access": "public"
+    },
+    "engines": {
+        "node": ">=18.0.0"
     }
 }
