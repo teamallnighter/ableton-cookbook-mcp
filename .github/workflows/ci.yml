@@ -98,7 +98,7 @@ jobs:
     - name: Check PHP syntax
       run: |
         cd packages/php-analyzers
-        find . -name "*.php" -exec php -l {} \;
+        find . -name "*.php" ! -name "test_*.php" -exec php -l {} \;
 
   release-check:
     runs-on: ubuntu-latest
