@@ -1,5 +1,5 @@
 {
-    "name": "@ableton-cookbook/mcp-server",
+    "name": "ableton-cookbook-mcp",
     "version": "0.1.0",
     "description": "MCP server for Ableton Live - Version control, rack analysis & real-time control for AI-powered music production",
     "main": "dist/index.js",
