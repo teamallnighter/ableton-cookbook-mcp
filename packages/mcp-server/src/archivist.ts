@@ -2,7 +2,6 @@ import fs from "fs-extra";
 import zlib from "zlib";
 import { XMLParser } from "fast-xml-parser";
 import { glob } from "glob";
-import path from "path";
 
 export class Archivist {
     private parser: XMLParser;
@@ -66,7 +65,7 @@ export class Archivist {
         // Helper to get track name, dealing with the complexity of XML node structure
         const getTrackInfo = (track: any) => {
             const name = track.Name?.EffectiveName?.["@_Value"] || track.Name?.UserName?.["@_Value"] || "Untitled";
-            const color = track.Color?.["@_Value"];
+            const _color = track.Color?.["@_Value"];
             const deviceChain = track.DeviceChain || {};
 
             // Extract devices (simplified)

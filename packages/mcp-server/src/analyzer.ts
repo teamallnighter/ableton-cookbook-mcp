@@ -342,7 +342,7 @@ try {
                         matched_device: deviceName
                     });
                 }
-            } catch (error) {
+            } catch {
                 // Skip racks that fail to parse
                 continue;
             }

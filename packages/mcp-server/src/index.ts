@@ -4,7 +4,6 @@ import {
     CallToolRequestSchema,
     ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { z } from "zod";
 import { Archivist } from "./archivist.js";
 import { Operator } from "./operator.js";
 import { Historian } from "./historian.js";
