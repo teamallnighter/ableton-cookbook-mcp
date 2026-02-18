@@ -96,6 +96,9 @@ jobs:
           php artisan view:cache
           php artisan event:cache
           
+          # Publish Livewire assets
+          php artisan livewire:publish --assets
+          
           # Update current symlink (atomic switch)
           ln -nfs "$RELEASE_DIR" /var/www/ableton-cookbook/current
           
