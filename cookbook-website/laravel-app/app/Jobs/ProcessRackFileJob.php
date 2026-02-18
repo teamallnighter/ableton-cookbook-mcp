@@ -71,8 +71,15 @@ class ProcessRackFileJob implements ShouldQueue
             // Update rack status to analyzing
             $this->updateRackStatus(RackProcessingStatus::ANALYZING);
 
-            // Process the rack through all stages
-            $result = $processingService->processRack($this->jobExecution);
+            // Get the file path from storage
+            $filePath = Storage::disk('private')->path($this->rack->file_path);
+
+            if (!file_exists($filePath)) {
+                throw new Exception('Rack file not found: ' . $this->rack->file_path);
+            }
+
+            // Analyze the rack file
+            $result = $this->analyzeExistingRack($filePath, $processingService);
 
             if ($result['success']) {
                 $this->handleJobSuccess($result, $notificationService);
@@ -82,6 +89,93 @@ class ProcessRackFileJob implements ShouldQueue
         } catch (Throwable $exception) {
             // Handle any unexpected exceptions
             $this->handleUnexpectedFailure($exception, $notificationService);
+        }
+    }
+
+    /**
+     * Analyze an existing rack file
+     */
+    private function analyzeExistingRack(string $filePath, RackProcessingService $processingService): array
+    {
+        $startTime = microtime(true);
+
+        try {
+            // Check if it's a drum rack
+            $drumAnalyzer = app(\App\Services\DrumRackAnalyzerService::class);
+            $isDrumRack = $drumAnalyzer->isDrumRack($filePath);
+
+            if ($isDrumRack) {
+                // Use specialized drum rack analyzer
+                $analysisResult = $drumAnalyzer->analyzeDrumRack($filePath, [
+                    'include_performance' => true,
+                    'verbose' => false
+                ]);
+
+                if ($analysisResult['success']) {
+                    $data = $analysisResult['data'];
+
+                    // Update rack with drum rack analysis results
+                    $this->rack->update([
+                        'rack_type' => 'drum_rack',
+                        'category' => 'drums',
+                        'ableton_version' => $data['ableton_version'] ?? null,
+                        'macro_controls' => $data['macro_controls'] ?? [],
+                        'version_details' => $data['version_details'] ?? [],
+                        'parsing_errors' => $data['parsing_errors'] ?? [],
+                        'parsing_warnings' => $data['parsing_warnings'] ?? [],
+                        'analysis_complete' => true,
+                        'status' => empty($data['parsing_errors']) ? 'approved' : 'pending',
+                        'published_at' => empty($data['parsing_errors']) ? now() : null,
+                    ]);
+                }
+            } else {
+                // Use general rack analyzer
+                $analyzer = new \App\Services\AbletonRackAnalyzer\AbletonRackAnalyzer();
+                $xml = $analyzer::decompressAndParseAbletonFile($filePath);
+
+                if (!$xml) {
+                    throw new Exception('Failed to decompress or parse the .adg file');
+                }
+
+                $analysisResult = $analyzer::parseChainsAndDevices($xml, $filePath);
+
+                if ($analysisResult) {
+                    // Update rack with analysis results  
+                    $this->rack->update([
+                        'rack_type' => $analysisResult['rack_type'] ?? 'Unknown',
+                        'device_count' => count($analysisResult['chains'][0]['devices'] ?? []),
+                        'chain_count' => count($analysisResult['chains'] ?? []),
+                        'ableton_version' => $analysisResult['ableton_version'] ?? null,
+                        'macro_controls' => $analysisResult['macro_controls'] ?? [],
+                        'devices' => $analysisResult['chains'] ?? [],
+                        'chains' => $analysisResult['chains'] ?? [],
+                        'version_details' => $analysisResult['version_details'] ?? [],
+                        'parsing_errors' => $analysisResult['parsing_errors'] ?? [],
+                        'parsing_warnings' => $analysisResult['parsing_warnings'] ?? [],
+                        'analysis_complete' => true,
+                        'status' => empty($analysisResult['parsing_errors']) ? 'approved' : 'pending',
+                        'published_at' => empty($analysisResult['parsing_errors']) ? now() : null,
+                    ]);
+                }
+            }
+
+            $processingTime = microtime(true) - $startTime;
+
+            return [
+                'success' => true,
+                'processing_time' => $processingTime,
+                'is_drum_rack' => $isDrumRack ?? false,
+            ];
+        } catch (Exception $e) {
+            $this->rack->update([
+                'status' => 'failed',
+                'processing_error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
         }
     }
 
