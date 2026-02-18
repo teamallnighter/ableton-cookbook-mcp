@@ -36,10 +36,10 @@ class ProcessRackFileJob implements ShouldQueue
     public $tries = 1; // We handle retries manually for better control
     public $maxExceptions = 1;
     public $failOnTimeout = true;
-    
+
     private string $jobId;
     private ?JobExecution $jobExecution = null;
-    
+
     public function __construct(public Rack $rack)
     {
         // Generate unique job ID for tracking
@@ -49,16 +49,17 @@ class ProcessRackFileJob implements ShouldQueue
     /**
      * Handle the job execution with comprehensive error handling
      */
-    public function handle(): void {
+    public function handle(): void
+    {
         try {
             // Resolve services manually to avoid dependency issues during initial setup
             $processingService = app(RackProcessingService::class);
-            $notificationService = app()->bound(JobNotificationService::class) ? 
+            $notificationService = app()->bound(JobNotificationService::class) ?
                 app(JobNotificationService::class) : null;
-            
+
             // Initialize or retrieve job execution record
             $this->jobExecution = $this->getOrCreateJobExecution();
-            
+
             Log::info('Starting comprehensive rack processing', [
                 'rack_id' => $this->rack->id,
                 'job_id' => $this->jobId,
@@ -66,19 +67,18 @@ class ProcessRackFileJob implements ShouldQueue
                 'filename' => $this->rack->original_filename,
                 'attempt' => $this->attempts() + 1
             ]);
-            
+
             // Update rack status to analyzing
             $this->updateRackStatus(RackProcessingStatus::ANALYZING);
-            
+
             // Process the rack through all stages
             $result = $processingService->processRack($this->jobExecution);
-            
+
             if ($result['success']) {
                 $this->handleJobSuccess($result, $notificationService);
             } else {
                 $this->handleJobFailure($result, $processingService, $notificationService);
             }
-            
         } catch (Throwable $exception) {
             // Handle any unexpected exceptions
             $this->handleUnexpectedFailure($exception, $notificationService);
@@ -95,7 +95,7 @@ class ProcessRackFileJob implements ShouldQueue
             'job_id' => $this->jobId,
             'processing_time' => $result['processing_time'] ?? null
         ]);
-        
+
         // Send success notification to user if service is available
         if ($notificationService) {
             try {
@@ -113,7 +113,7 @@ class ProcessRackFileJob implements ShouldQueue
             }
         }
     }
-    
+
     /**
      * Handle job failure (not retry-scheduled)
      */
@@ -125,10 +125,10 @@ class ProcessRackFileJob implements ShouldQueue
                 'job_id' => $this->jobId,
                 'failure_category' => $result['failure_category'] ?? 'unknown'
             ]);
-            
+
             // Update rack to permanently failed status
             $this->updateRackStatus(RackProcessingStatus::PERMANENTLY_FAILED);
-            
+
             // Send failure notification if service is available
             if ($notificationService) {
                 try {
@@ -154,7 +154,7 @@ class ProcessRackFileJob implements ShouldQueue
             ]);
         }
     }
-    
+
     /**
      * Handle unexpected failure that bypassed normal error handling
      */
@@ -167,7 +167,7 @@ class ProcessRackFileJob implements ShouldQueue
             'exception_message' => $exception->getMessage(),
             'stack_trace' => $exception->getTraceAsString()
         ]);
-        
+
         try {
             // Try to handle through the processing service
             if ($this->jobExecution) {
@@ -178,7 +178,6 @@ class ProcessRackFileJob implements ShouldQueue
                 // Fall back to basic error handling
                 $this->updateRackStatus(RackProcessingStatus::PERMANENTLY_FAILED);
             }
-            
         } catch (Throwable $secondaryException) {
             Log::critical('Secondary failure in error handling', [
                 'rack_id' => $this->rack->id,
@@ -186,10 +185,10 @@ class ProcessRackFileJob implements ShouldQueue
                 'original_exception' => $exception->getMessage(),
                 'secondary_exception' => $secondaryException->getMessage()
             ]);
-            
+
             // Fall back to basic error handling
             $this->updateRackStatus(RackProcessingStatus::PERMANENTLY_FAILED);
-            
+
             // Try to send a basic failure notification
             if ($notificationService) {
                 try {
@@ -208,7 +207,7 @@ class ProcessRackFileJob implements ShouldQueue
                 }
             }
         }
-        
+
         // Always throw the original exception to trigger Laravel's failure handling
         throw $exception;
     }
@@ -220,7 +219,7 @@ class ProcessRackFileJob implements ShouldQueue
     {
         // Try to find existing job execution by ID
         $jobExecution = JobExecution::where('job_id', $this->jobId)->first();
-        
+
         if (!$jobExecution) {
             // Check if there's an existing job for this rack
             $existingJob = JobExecution::where('model_id', $this->rack->id)
@@ -228,13 +227,13 @@ class ProcessRackFileJob implements ShouldQueue
                 ->where('job_class', static::class)
                 ->whereIn('status', ['processing', 'retry_scheduled', 'queued'])
                 ->first();
-                
+
             if ($existingJob) {
                 // Use existing job execution
                 $this->jobId = $existingJob->job_id;
                 return $existingJob;
             }
-            
+
             // Create new job execution record
             $jobExecution = JobExecution::create([
                 'job_id' => $this->jobId,
@@ -255,10 +254,10 @@ class ProcessRackFileJob implements ShouldQueue
                 ]
             ]);
         }
-        
+
         return $jobExecution;
     }
-    
+
     /**
      * Update rack status with proper state transition validation
      */
@@ -266,7 +265,7 @@ class ProcessRackFileJob implements ShouldQueue
     {
         try {
             $currentStatus = RackProcessingStatus::from($this->rack->processing_status ?? 'uploaded');
-            
+
             if (!$currentStatus->canTransitionTo($newStatus)) {
                 Log::warning('Invalid rack status transition attempted', [
                     'rack_id' => $this->rack->id,
@@ -276,7 +275,7 @@ class ProcessRackFileJob implements ShouldQueue
                 ]);
                 return;
             }
-            
+
             $this->rack->update([
                 'processing_status' => $newStatus->value,
                 'current_job_id' => $this->jobId,
@@ -291,16 +290,16 @@ class ProcessRackFileJob implements ShouldQueue
                 'status' => $newStatus->value,
                 'error' => $e->getMessage()
             ]);
-            
+
             // Fall back to updating basic status
             try {
-                $basicStatus = match($newStatus) {
+                $basicStatus = match ($newStatus) {
                     RackProcessingStatus::ANALYZING => 'processing',
                     RackProcessingStatus::ANALYSIS_COMPLETE => 'pending',
                     RackProcessingStatus::PERMANENTLY_FAILED => 'failed',
                     default => 'processing'
                 };
-                
+
                 $this->rack->update(['status' => $basicStatus]);
             } catch (Throwable $fallbackError) {
                 Log::critical('Failed to update basic rack status', [
@@ -310,7 +309,7 @@ class ProcessRackFileJob implements ShouldQueue
             }
         }
     }
-    
+
     /**
      * Get rack file size for metadata
      */
@@ -338,7 +337,7 @@ class ProcessRackFileJob implements ShouldQueue
             'exception_message' => $exception->getMessage(),
             'attempts' => $this->attempts()
         ]);
-        
+
         try {
             // Update job execution record
             if ($this->jobExecution) {
@@ -349,16 +348,15 @@ class ProcessRackFileJob implements ShouldQueue
                     'stack_trace' => $exception->getTraceAsString()
                 ]);
             }
-            
+
             // Update rack status
             $this->updateRackStatus(RackProcessingStatus::PERMANENTLY_FAILED);
-            
+
             // Update basic rack error info for backward compatibility
             $this->rack->update([
                 'status' => 'failed',
                 'processing_error' => $exception->getMessage()
             ]);
-            
         } catch (Throwable $e) {
             Log::critical('Failed to handle job failure cleanup', [
                 'rack_id' => $this->rack->id,
@@ -367,7 +365,7 @@ class ProcessRackFileJob implements ShouldQueue
             ]);
         }
     }
-    
+
     /**
      * Get the unique job ID for this execution
      */
@@ -375,20 +373,25 @@ class ProcessRackFileJob implements ShouldQueue
     {
         return $this->jobId;
     }
-    
+
     /**
      * Get the number of times this job has been attempted
      */
     public function attempts(): int
     {
-        if ($this->jobExecution) {
-            return $this->jobExecution->attempts;
+        if ($this->jobExecution && $this->jobExecution->attempts !== null) {
+            return (int) $this->jobExecution->attempts;
         }
-        
+
         // Use the job property from InteractsWithQueue trait
-        return $this->job ? $this->job->attempts() : 0;
+        if (isset($this->job) && $this->job !== null) {
+            $attempts = $this->job->attempts();
+            return $attempts !== null ? (int) $attempts : 0;
+        }
+
+        return 0;
     }
-    
+
     /**
      * Determine if the job should fail on timeout
      */
@@ -396,7 +399,7 @@ class ProcessRackFileJob implements ShouldQueue
     {
         return true;
     }
-    
+
     /**
      * Get job tags for identification and filtering
      */
@@ -409,7 +412,7 @@ class ProcessRackFileJob implements ShouldQueue
             'job_' . $this->jobId
         ];
     }
-    
+
     /**
      * Get middleware that should be applied to the job
      */
