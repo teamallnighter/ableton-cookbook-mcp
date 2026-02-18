@@ -1,0 +1,475 @@
+/* Enhanced Loading States CSS */
+
+/* Loading Container Styles */
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    text-align: center;
+    min-height: 100px;
+}
+
+.loading-small {
+    padding: 1rem;
+    min-height: 60px;
+}
+
+.loading-medium {
+    padding: 2rem;
+    min-height: 100px;
+}
+
+.loading-large {
+    padding: 3rem;
+    min-height: 150px;
+}
+
+/* Loading Spinner */
+.loading-spinner {
+    margin-bottom: 1rem;
+}
+
+.loading-icon {
+    width: 48px;
+    height: 48px;
+    color: #3b82f6;
+}
+
+.loading-small .loading-icon {
+    width: 24px;
+    height: 24px;
+}
+
+.loading-large .loading-icon {
+    width: 64px;
+    height: 64px;
+}
+
+/* Loading Message */
+.loading-message {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.loading-eta {
+    font-size: 0.75rem;
+    color: #9ca3af;
+    font-style: italic;
+}
+
+/* Progress Bar */
+.loading-progress {
+    width: 100%;
+    max-width: 300px;
+    height: 8px;
+    background-color: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+}
+
+.loading-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+    transition: width 0.3s ease;
+    position: relative;
+}
+
+.loading-progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.4),
+        transparent
+    );
+    animation: progressShimmer 1.5s infinite;
+}
+
+@keyframes progressShimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.loading-percentage {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+/* Skeleton Loading */
+.loading-skeleton {
+    width: 100%;
+    max-width: 400px;
+}
+
+.skeleton-line {
+    height: 16px;
+    background: linear-gradient(
+        90deg,
+        #f3f4f6 25%,
+        #e5e7eb 50%,
+        #f3f4f6 75%
+    );
+    background-size: 200% 100%;
+    animation: skeletonPulse 1.5s ease-in-out infinite;
+    border-radius: 4px;
+    margin-bottom: 0.75rem;
+}
+
+.skeleton-line-title {
+    height: 24px;
+    width: 60%;
+}
+
+.skeleton-line-text {
+    height: 16px;
+    width: 100%;
+}
+
+.skeleton-line-short {
+    width: 40%;
+}
+
+@keyframes skeletonPulse {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+/* Dots Loading */
+.loading-dots {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 1rem;
+}
+
+.loading-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #3b82f6;
+    animation: dotBounce 1.4s ease-in-out infinite both;
+}
+
+.loading-dot:nth-child(1) { animation-delay: -0.32s; }
+.loading-dot:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes dotBounce {
+    0%, 80%, 100% {
+        transform: scale(0.7);
+        opacity: 0.5;
+    }
+    40% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Cancel Button */
+.loading-cancel-btn {
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    background-color: #f3f4f6;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    color: #374151;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.loading-cancel-btn:hover {
+    background-color: #e5e7eb;
+    border-color: #9ca3af;
+}
+
+/* Loading Overlay */
+.loading-overlay {
+    position: relative;
+}
+
+.loading-overlay::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+/* Error States */
+.error-container {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.5rem;
+    border-radius: 8px;
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+}
+
+.error-medium {
+    background-color: #fef3cd;
+    border-color: #fde68a;
+}
+
+.error-high {
+    background-color: #fef2f2;
+    border-color: #fecaca;
+}
+
+.error-critical {
+    background-color: #f3f4f6;
+    border-color: #d1d5db;
+    color: #ef4444;
+}
+
+.error-icon {
+    flex-shrink: 0;
+    width: 24px;
+    height: 24px;
+    color: #ef4444;
+}
+
+.error-medium .error-icon {
+    color: #f59e0b;
+}
+
+.error-content {
+    flex: 1;
+}
+
+.error-message {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 0.5rem;
+}
+
+.error-action {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 1rem;
+}
+
+.error-controls {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.error-retry-btn,
+.error-dismiss-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.error-retry-btn {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.error-retry-btn:hover {
+    background-color: #2563eb;
+}
+
+.error-dismiss-btn {
+    background-color: transparent;
+    color: #6b7280;
+    border-color: #d1d5db;
+}
+
+.error-dismiss-btn:hover {
+    background-color: #f9fafb;
+    color: #374151;
+}
+
+/* Global Notifications */
+.global-loading-notification,
+.global-error-notification {
+    position: fixed;
+    max-width: 400px;
+    z-index: 9999;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    animation: slideIn 0.3s ease-out;
+}
+
+.global-loading-notification {
+    background-color: white;
+    border: 1px solid #e5e7eb;
+}
+
+.global-error-notification {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.error-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 0.25rem;
+    line-height: 1;
+}
+
+.error-close-btn:hover {
+    color: #374151;
+}
+
+/* Active States */
+.loading-active {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.error-active {
+    border-color: #fca5a5 !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .loading-container {
+        padding: 1.5rem 1rem;
+    }
+    
+    .global-loading-notification,
+    .global-error-notification {
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+    
+    .error-controls {
+        flex-direction: column;
+    }
+    
+    .error-retry-btn,
+    .error-dismiss-btn {
+        width: 100%;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .loading-container {
+        color: #f3f4f6;
+    }
+    
+    .loading-message {
+        color: #d1d5db;
+    }
+    
+    .loading-eta {
+        color: #9ca3af;
+    }
+    
+    .loading-progress {
+        background-color: #374151;
+    }
+    
+    .skeleton-line {
+        background: linear-gradient(
+            90deg,
+            #374151 25%,
+            #4b5563 50%,
+            #374151 75%
+        );
+    }
+    
+    .error-container {
+        background-color: #1f2937;
+        border-color: #374151;
+        color: #f3f4f6;
+    }
+    
+    .global-loading-notification {
+        background-color: #1f2937;
+        border-color: #374151;
+        color: #f3f4f6;
+    }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .loading-icon,
+    .loading-progress-bar::after,
+    .skeleton-line,
+    .loading-dot,
+    .global-loading-notification,
+    .global-error-notification {
+        animation: none;
+    }
+    
+    .loading-progress-bar,
+    .error-retry-btn,
+    .error-dismiss-btn,
+    .loading-cancel-btn {
+        transition: none;
+    }
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    .error-container {
+        border-width: 2px;
+    }
+    
+    .loading-progress-bar {
+        background: #000;
+    }
+    
+    .error-retry-btn {
+        background-color: #000;
+        border-color: #000;
+    }
+}
+
+/* Focus Management */
+.loading-cancel-btn:focus,
+.error-retry-btn:focus,
+.error-dismiss-btn:focus,
+.error-close-btn:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* Print Styles */
+@media print {
+    .loading-container,
+    .error-container,
+    .global-loading-notification,
+    .global-error-notification {
+        display: none !important;
+    }
+}

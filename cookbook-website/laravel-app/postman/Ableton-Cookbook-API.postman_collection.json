@@ -1,0 +1,886 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+		"name": "Ableton Cookbook API",
+		"description": "API collection for the Ableton Cookbook platform. Share and discover Ableton Live racks including instrument racks, audio effect racks, and MIDI racks.\n\n## Authentication\nThis API uses Laravel Sanctum for authentication. You'll need to:\n1. Register or login to get an API token\n2. Include the token in the Authorization header as Bearer token\n\n## Base URLs\n- Production: https://ableton.recipes\n- Development: http://127.0.0.1:8080\n\n## Rate Limiting\nAPI requests are rate limited to prevent abuse. See response headers for current limits.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "12345678"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"user@example.com\",\n    \"password\": \"password\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"login"
+							]
+						},
+						"description": "Login with email and password to get a session token"
+					},
+					"response": []
+				},
+				{
+					"name": "Create API Token",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"API Token\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/tokens",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"tokens"
+							]
+						},
+						"description": "Create a new API token for authentication"
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication endpoints for login and token management"
+		},
+		{
+			"name": "Racks",
+			"item": [
+				{
+					"name": "Get All Racks",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/racks?page=1&per_page=20&sort=-created_at",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"racks"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number for pagination"
+								},
+								{
+									"key": "per_page",
+									"value": "20",
+									"description": "Number of items per page (max 100)"
+								},
+								{
+									"key": "sort",
+									"value": "-created_at",
+									"description": "Sort field (prefix with - for descending)"
+								},
+								{
+									"key": "filter[rack_type]",
+									"value": "instrument",
+									"description": "Filter by rack type",
+									"disabled": true
+								},
+								{
+									"key": "filter[user_id]",
+									"value": "1",
+									"description": "Filter by user ID",
+									"disabled": true
+								},
+								{
+									"key": "filter[category]",
+									"value": "bass",
+									"description": "Filter by category",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Retrieve a paginated list of published racks with optional filtering and sorting"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Rack by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/racks/{{rack_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"racks",
+								"{{rack_id}}"
+							]
+						},
+						"description": "Get detailed information about a specific rack"
+					},
+					"response": []
+				},
+				{
+					"name": "Create Rack",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "multipart/form-data"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "title",
+									"value": "Epic Bass Rack",
+									"type": "text"
+								},
+								{
+									"key": "description",
+									"value": "A powerful bass rack with multiple layers and effects",
+									"type": "text"
+								},
+								{
+									"key": "rack_type",
+									"value": "instrument",
+									"type": "text"
+								},
+								{
+									"key": "category",
+									"value": "bass",
+									"type": "text"
+								},
+								{
+									"key": "tags",
+									"value": "bass,808,trap",
+									"type": "text"
+								},
+								{
+									"key": "rack_file",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "image",
+									"type": "file",
+									"src": []
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/racks",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"racks"
+							]
+						},
+						"description": "Upload a new rack with .adg file and optional image"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Rack",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"title\": \"Updated Epic Bass Rack\",\n    \"description\": \"An even more powerful bass rack with enhanced features\",\n    \"category\": \"bass\",\n    \"tags\": \"bass,808,trap,updated\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/racks/{{rack_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"racks",
+								"{{rack_id}}"
+							]
+						},
+						"description": "Update an existing rack (only owner can update)"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Rack",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/racks/{{rack_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"racks",
+								"{{rack_id}}"
+							]
+						},
+						"description": "Delete a rack (only owner can delete)"
+					},
+					"response": []
+				},
+				{
+					"name": "Download Rack",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/racks/{{rack_id}}/download",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"racks",
+								"{{rack_id}}",
+								"download"
+							]
+						},
+						"description": "Download the .adg file for a rack"
+					},
+					"response": []
+				}
+			],
+			"description": "Endpoints for managing Ableton Live racks"
+		},
+		{
+			"name": "Users",
+			"item": [
+				{
+					"name": "Get User Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{user_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"{{user_id}}"
+							]
+						},
+						"description": "Get detailed user profile information including follower counts"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Racks",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{user_id}}/racks?page=1&per_page=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"{{user_id}}",
+								"racks"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "per_page",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get all racks by a specific user"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Followers",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{user_id}}/followers",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"{{user_id}}",
+								"followers"
+							]
+						},
+						"description": "Get list of users following this user"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Following",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{user_id}}/following",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"{{user_id}}",
+								"following"
+							]
+						},
+						"description": "Get list of users this user is following"
+					},
+					"response": []
+				},
+				{
+					"name": "Follow User",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{user_id}}/follow",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"{{user_id}}",
+								"follow"
+							]
+						},
+						"description": "Follow another user to see their content in your feed"
+					},
+					"response": []
+				},
+				{
+					"name": "Unfollow User",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/{{user_id}}/unfollow",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"{{user_id}}",
+								"unfollow"
+							]
+						},
+						"description": "Unfollow a user"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Feed",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/feed?per_page=20",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"users",
+								"feed"
+							],
+							"query": [
+								{
+									"key": "per_page",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get racks from users you follow"
+					},
+					"response": []
+				}
+			],
+			"description": "User profile and social features"
+		},
+		{
+			"name": "Ratings",
+			"item": [
+				{
+					"name": "Rate Rack",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"rating\": 5,\n    \"comment\": \"Amazing bass rack! Really punchy sound.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/racks/{{rack_id}}/rate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"racks",
+								"{{rack_id}}",
+								"rate"
+							]
+						},
+						"description": "Rate a rack (1-5 stars) with optional comment"
+					},
+					"response": []
+				}
+			],
+			"description": "Rack rating and review endpoints"
+		},
+		{
+			"name": "Comments",
+			"item": [
+				{
+					"name": "Get Rack Comments",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/racks/{{rack_id}}/comments",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"racks",
+								"{{rack_id}}",
+								"comments"
+							]
+						},
+						"description": "Get comments for a specific rack"
+					},
+					"response": []
+				},
+				{
+					"name": "Add Comment",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"content\": \"Great rack! Love the sound design.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/racks/{{rack_id}}/comments",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"racks",
+								"{{rack_id}}",
+								"comments"
+							]
+						},
+						"description": "Add a comment to a rack"
+					},
+					"response": []
+				}
+			],
+			"description": "Comment system for racks"
+		},
+		{
+			"name": "Collections",
+			"item": [
+				{
+					"name": "Get User Collections",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/v1/collections",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"collections"
+							]
+						},
+						"description": "Get current user's collections"
+					},
+					"response": []
+				},
+				{
+					"name": "Add Rack to Collection",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{auth_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"collection_name\": \"My Favorites\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/racks/{{rack_id}}/collect",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"racks",
+								"{{rack_id}}",
+								"collect"
+							]
+						},
+						"description": "Add a rack to a collection"
+					},
+					"response": []
+				}
+			],
+			"description": "User collections for organizing favorite racks"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Auto-set base_url if not already set",
+					"if (!pm.environment.get('base_url')) {",
+					"    pm.environment.set('base_url', 'http://127.0.0.1:8080');",
+					"}",
+					"",
+					"// Set common headers",
+					"pm.request.headers.upsert({",
+					"    key: 'User-Agent',",
+					"    value: 'Postman/Ableton-Cookbook-API'",
+					"});"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Common tests for all requests",
+					"pm.test('Status code is not 500', function () {",
+					"    pm.expect(pm.response.code).to.not.equal(500);",
+					"});",
+					"",
+					"pm.test('Response time is reasonable', function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(5000);",
+					"});",
+					"",
+					"// Auto-extract token from login response",
+					"if (pm.response.json() && pm.response.json().token) {",
+					"    pm.environment.set('auth_token', pm.response.json().token);",
+					"    console.log('Auth token extracted and saved');",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://127.0.0.1:8080",
+			"type": "string"
+		},
+		{
+			"key": "auth_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "user_id",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "rack_id",
+			"value": "1",
+			"type": "string"
+		}
+	]
+}

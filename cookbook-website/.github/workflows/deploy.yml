@@ -1,0 +1,120 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'cookbook-website/**'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+        extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, dom, filter, gd, iconv, json, mbstring, pdo
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: cookbook-website/laravel-app/package-lock.json
+        
+    - name: Install PHP dependencies
+      working-directory: ./cookbook-website/laravel-app
+      run: composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+      
+    - name: Install Node dependencies
+      working-directory: ./cookbook-website/laravel-app
+      run: npm ci
+      
+    - name: Build assets
+      working-directory: ./cookbook-website/laravel-app
+      run: npm run build
+      
+    - name: Run tests (if they exist)
+      working-directory: ./cookbook-website/laravel-app
+      run: |
+        if [ -f "phpunit.xml" ] || [ -f "phpunit.xml.dist" ]; then
+          cp .env.example .env
+          php artisan key:generate
+          ./vendor/bin/phpunit
+        else
+          echo "No tests found, skipping..."
+        fi
+      
+    - name: Create release directory name
+      id: release
+      run: echo "timestamp=$(date +%Y%m%d_%H%M%S)" >> $GITHUB_OUTPUT
+      
+    - name: Deploy Laravel app to server
+      uses: easingthemes/ssh-deploy@main
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        REMOTE_HOST: ${{ secrets.HOST }}
+        REMOTE_PORT: 22022
+        REMOTE_USER: ${{ secrets.USERNAME }}
+        SOURCE: "cookbook-website/laravel-app/"
+        TARGET: "/var/www/ableton-cookbook/releases/${{ steps.release.outputs.timestamp }}"
+        EXCLUDE: "/node_modules/, /vendor/, /.git/, /.github/, /tests/, /storage/logs/, /storage/framework/cache/, /storage/framework/sessions/, /storage/framework/views/"
+      
+    - name: Run post-deployment commands
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.DEPLOY_SSH_KEY }}
+        port: 22022
+        script: |
+          RELEASE_DIR="/var/www/ableton-cookbook/releases/${{ steps.release.outputs.timestamp }}"
+          
+          cd "$RELEASE_DIR"
+          
+          # Create symlinks to shared storage and .env
+          rm -rf storage && ln -nfs /var/www/ableton-cookbook/shared/storage storage
+          rm -f .env && ln -nfs /var/www/ableton-cookbook/shared/.env .env
+          
+          # Install production dependencies
+          composer install --no-dev --optimize-autoloader --no-interaction
+          
+          # Run migrations
+          php artisan migrate --force
+          
+          # Optimize
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
+          php artisan event:cache
+          
+          # Update current symlink (atomic switch)
+          ln -nfs "$RELEASE_DIR" /var/www/ableton-cookbook/current
+          
+          # Reload services
+          sudo systemctl reload php8.2-fpm
+          sudo supervisorctl restart ableton-cookbook-default:*
+          php artisan queue:restart
+          
+          # Cleanup old releases (keep last 5)
+          cd /var/www/ableton-cookbook/releases
+          ls -t | tail -n +6 | xargs -r rm -rf
+          
+          echo "✅ Deployment completed successfully!"
+          
+    - name: Notify deployment status
+      if: always()
+      run: |
+        if [ "${{ job.status }}" == "success" ]; then
+          echo "✅ Deployment successful!"
+        else
+          echo "❌ Deployment failed!"
+        fi

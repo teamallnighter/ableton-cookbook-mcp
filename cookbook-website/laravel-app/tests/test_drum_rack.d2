@@ -1,0 +1,47 @@
+direction: right
+
+drum_rack: "808 Test Kit" {
+  style.fill: "#1a1a1a"
+  
+  grid: {
+    C1: "Kick 808" {
+      tooltip: |md
+        **MIDI**: C1 (36)
+        **Device**: 808 Kick
+        **Chain**: Direct to master
+      |
+      style.fill: "#ff6b6b"
+      style.font-color: white
+    }
+    
+    D1: "Snare" {
+      tooltip: |md
+        **MIDI**: D1 (38)  
+        **Device**: Clap + Reverb
+        **Chain**: Effects processing
+      |
+      style.fill: "#4ecdc4"
+      style.font-color: white
+    }
+    
+    E1: "Hi-Hat" {
+      tooltip: |md
+        **MIDI**: E1 (40)
+        **Device**: HiHat synthesizer
+        **Chain**: Filter + Autopan
+      |
+      style.fill: "#45b7d1"
+      style.font-color: white
+    }
+  }
+  
+  master_chain: "Master" {
+    drum_buss -> glue_comp -> output
+    style.fill: "#2d3748"
+    style.font-color: white
+  }
+  
+  grid.C1 -> master_chain
+  grid.D1 -> master_chain  
+  grid.E1 -> master_chain
+}

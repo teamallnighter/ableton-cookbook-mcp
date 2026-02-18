@@ -1,0 +1,334 @@
+openapi: 3.0.3
+info:
+  title: Enhanced Nested Chain Analysis API
+  description: API endpoints for comprehensive nested chain detection and analysis in Ableton racks
+  version: 1.0.0
+  contact:
+    name: Ableton Cookbook Platform
+    url: https://github.com/teamallnighter/ableton-cookbook
+
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Development server
+  - url: https://ableton-cookbook.com/api/v1
+    description: Production server
+
+security:
+  - bearerAuth: []
+  - sessionAuth: []
+
+paths:
+  /racks/{uuid}/analyze-nested-chains:
+    post:
+      summary: Trigger enhanced nested chain analysis for existing rack
+      description: Reprocess an existing rack to detect all nested chains using enhanced analyzer
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID of the rack to reanalyze
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                force_reanalysis:
+                  type: boolean
+                  description: Force reanalysis even if already processed
+                  default: false
+      responses:
+        '200':
+          description: Analysis completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NestedChainAnalysisResult'
+        '202':
+          description: Analysis queued for background processing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Analysis queued for processing"
+                  job_id:
+                    type: string
+                    format: uuid
+        '404':
+          description: Rack not found
+        '429':
+          description: Rate limit exceeded (10/min batch operations)
+
+  /racks/{uuid}/nested-chains:
+    get:
+      summary: Get nested chain hierarchy for rack
+      description: Retrieve complete nested chain structure and hierarchy for a rack
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: include_devices
+          in: query
+          schema:
+            type: boolean
+            default: true
+          description: Include device information for each chain
+        - name: max_depth
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 10
+          description: Maximum nesting depth to return
+      responses:
+        '200':
+          description: Nested chain hierarchy retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NestedChainHierarchy'
+        '404':
+          description: Rack not found or no nested chain analysis available
+
+  /racks/{uuid}/nested-chains/{chainId}:
+    get:
+      summary: Get specific nested chain details
+      description: Retrieve detailed information about a specific nested chain
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: chainId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Chain details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NestedChainDetail'
+        '404':
+          description: Rack or chain not found
+
+  /analysis/constitutional-compliance:
+    get:
+      summary: Check constitutional compliance status
+      description: Verify that all racks meet constitutional requirement for complete chain analysis
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Compliance status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConstitutionalComplianceReport'
+
+  /analysis/batch-reprocess:
+    post:
+      summary: Batch reprocess racks for nested chain analysis
+      description: Queue multiple racks for enhanced nested chain analysis
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rack_uuids:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+                  maxItems: 10
+                  description: UUIDs of racks to reprocess (max 10 per batch)
+                priority:
+                  type: string
+                  enum: [low, normal, high]
+                  default: normal
+      responses:
+        '202':
+          description: Batch processing queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  batch_id:
+                    type: string
+                    format: uuid
+                  queued_count:
+                    type: integer
+                  estimated_completion:
+                    type: string
+                    format: date-time
+        '400':
+          description: Invalid request (too many racks, invalid UUIDs)
+        '429':
+          description: Rate limit exceeded (10/min batch operations)
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    sessionAuth:
+      type: apiKey
+      in: cookie
+      name: laravel_session
+
+  schemas:
+    NestedChainAnalysisResult:
+      type: object
+      properties:
+        rack_uuid:
+          type: string
+          format: uuid
+        analysis_complete:
+          type: boolean
+        constitutional_compliant:
+          type: boolean
+        nested_chains_detected:
+          type: integer
+        max_nesting_depth:
+          type: integer
+        total_devices:
+          type: integer
+        analysis_duration_ms:
+          type: integer
+        processed_at:
+          type: string
+          format: date-time
+        hierarchy_preview:
+          $ref: '#/components/schemas/ChainHierarchyNode'
+
+    NestedChainHierarchy:
+      type: object
+      properties:
+        rack_uuid:
+          type: string
+          format: uuid
+        total_chains:
+          type: integer
+        max_depth:
+          type: integer
+        root_chains:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChainHierarchyNode'
+
+    ChainHierarchyNode:
+      type: object
+      properties:
+        chain_id:
+          type: string
+          format: uuid
+        chain_name:
+          type: string
+        chain_type:
+          type: string
+          enum: [instrument, audio_effect, drum_pad, midi_effect, unknown]
+        depth_level:
+          type: integer
+        device_count:
+          type: integer
+        is_empty:
+          type: boolean
+        devices:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChainDevice'
+        child_chains:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChainHierarchyNode'
+
+    ChainDevice:
+      type: object
+      properties:
+        device_name:
+          type: string
+        device_type:
+          type: string
+        device_index:
+          type: integer
+        is_max_for_live:
+          type: boolean
+        parameters:
+          type: object
+          additionalProperties: true
+
+    NestedChainDetail:
+      allOf:
+        - $ref: '#/components/schemas/ChainHierarchyNode'
+        - type: object
+          properties:
+            xml_path:
+              type: string
+            parent_chain_id:
+              type: string
+              format: uuid
+              nullable: true
+            analysis_metadata:
+              type: object
+              additionalProperties: true
+
+    ConstitutionalComplianceReport:
+      type: object
+      properties:
+        total_racks:
+          type: integer
+        compliant_racks:
+          type: integer
+        non_compliant_racks:
+          type: integer
+        compliance_percentage:
+          type: number
+          format: float
+        racks_requiring_reprocessing:
+          type: array
+          items:
+            type: object
+            properties:
+              rack_uuid:
+                type: string
+                format: uuid
+              rack_title:
+                type: string
+              uploaded_at:
+                type: string
+                format: date-time
+              reason:
+                type: string

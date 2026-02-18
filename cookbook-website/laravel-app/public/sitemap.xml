@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <sitemap>
+        <loc>https://ableton.recipes/sitemap-static.xml</loc>
+        <lastmod>2025-08-17T01:00:01.809881Z</lastmod>
+    </sitemap>
+    <sitemap>
+        <loc>https://ableton.recipes/sitemap-racks.xml</loc>
+        <lastmod>2025-08-17T01:00:01.827957Z</lastmod>
+    </sitemap>
+    <sitemap>
+        <loc>https://ableton.recipes/sitemap-users.xml</loc>
+        <lastmod>2025-08-17T01:00:01.833102Z</lastmod>
+    </sitemap>
+</sitemapindex>

@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="test-token">
+    <title>Memory Leak & Error Boundary Test</title>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <script src="/js/error-handler.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .test-controls {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary { background: #3b82f6; color: white; }
+        .btn-danger { background: #ef4444; color: white; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-warning { background: #f59e0b; color: white; }
+        .memory-stats {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 5px 0;
+        }
+        .status.success { background: #d1fae5; color: #065f46; }
+        .status.error { background: #fee2e2; color: #991b1b; }
+        .status.warning { background: #fef3c7; color: #92400e; }
+        .tree-container {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+        }
+        .tree-item {
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <h1>Ableton Cookbook - Memory Leak & Error Boundary Tests</h1>
+    
+    <!-- Memory Statistics -->
+    <div class="test-section">
+        <h2>Memory Usage Statistics</h2>
+        <div class="memory-stats" id="memory-stats">
+            Loading memory statistics...
+        </div>
+        <div class="test-controls">
+            <button class="btn btn-primary" onclick="updateMemoryStats()">Refresh Stats</button>
+            <button class="btn btn-warning" onclick="forceGarbageCollection()">Force GC</button>
+        </div>
+    </div>
+
+    <!-- Alpine.js Tree View Memory Test -->
+    <div class="test-section">
+        <h2>Alpine.js Tree View Memory Leak Test</h2>
+        <p>This test simulates the tree view component from rack-show.blade.php</p>
+        
+        <div class="test-controls">
+            <button class="btn btn-primary" onclick="createTreeView()">Create Tree View</button>
+            <button class="btn btn-danger" onclick="destroyTreeView()">Destroy Tree View</button>
+            <button class="btn btn-warning" onclick="massCreateDestroy()">Mass Create/Destroy (100x)</button>
+        </div>
+        
+        <div id="tree-test-container"></div>
+        
+        <div class="status" id="tree-status">Ready to test</div>
+    </div>
+
+    <!-- Error Boundary Test -->
+    <div class="test-section">
+        <h2>Error Boundary & Recovery Test</h2>
+        <p>Test different types of errors and recovery mechanisms</p>
+        
+        <div class="test-controls">
+            <button class="btn btn-danger" onclick="triggerJSError()">JavaScript Error</button>
+            <button class="btn btn-danger" onclick="triggerNetworkError()">Network Error</button>
+            <button class="btn btn-danger" onclick="triggerPermissionError()">Permission Error</button>
+            <button class="btn btn-danger" onclick="triggerValidationError()">Validation Error</button>
+            <button class="btn btn-success" onclick="clearAllErrors()">Clear All Errors</button>
+        </div>
+        
+        <div class="status" id="error-status">Error boundary ready</div>
+    </div>
+
+    <!-- Fetch Abort Controller Test -->
+    <div class="test-section">
+        <h2>Fetch Abort Controller Test</h2>
+        <p>Test request cancellation and memory cleanup</p>
+        
+        <div class="test-controls">
+            <button class="btn btn-primary" onclick="startMultipleRequests()">Start Multiple Requests</button>
+            <button class="btn btn-danger" onclick="cancelAllRequests()">Cancel All Requests</button>
+        </div>
+        
+        <div id="request-status"></div>
+    </div>
+
+    <!-- Performance Monitoring -->
+    <div class="test-section">
+        <h2>Performance Monitoring</h2>
+        <div id="performance-stats"></div>
+    </div>
+
+    <script>
+        let testData = {
+            treeViews: [],
+            activeRequests: [],
+            performanceMarks: []
+        };
+
+        // Memory Statistics
+        function updateMemoryStats() {
+            const stats = document.getElementById('memory-stats');
+            
+            if (performance.memory) {
+                const memory = performance.memory;
+                const used = Math.round(memory.usedJSHeapSize / 1024 / 1024);
+                const total = Math.round(memory.totalJSHeapSize / 1024 / 1024);
+                const limit = Math.round(memory.jsHeapSizeLimit / 1024 / 1024);
+                const percentage = Math.round((used / limit) * 100);
+                
+                stats.innerHTML = `
+                    <strong>JavaScript Heap Memory:</strong><br>
+                    Used: ${used} MB / Limit: ${limit} MB (${percentage}%)<br>
+                    Total Allocated: ${total} MB<br>
+                    <div style="background: #e5e7eb; height: 20px; border-radius: 10px; overflow: hidden; margin: 10px 0;">
+                        <div style="background: ${percentage > 80 ? '#ef4444' : percentage > 60 ? '#f59e0b' : '#10b981'}; width: ${percentage}%; height: 100%; transition: all 0.3s;"></div>
+                    </div>
+                    Tree Views: ${testData.treeViews.length} active<br>
+                    Active Requests: ${testData.activeRequests.length}<br>
+                    DOM Nodes: ${document.querySelectorAll('*').length}
+                `;
+                
+                if (percentage > 85) {
+                    stats.className = 'memory-stats status error';
+                    stats.innerHTML += '<br><strong>⚠️ High memory usage detected!</strong>';
+                } else if (percentage > 70) {
+                    stats.className = 'memory-stats status warning';
+                } else {
+                    stats.className = 'memory-stats status success';
+                }
+            } else {
+                stats.innerHTML = 'Memory API not available in this browser.';
+            }
+        }
+
+        function forceGarbageCollection() {
+            if (window.gc) {
+                window.gc();
+                updateMemoryStats();
+                showStatus('tree-status', 'Garbage collection forced', 'success');
+            } else {
+                showStatus('tree-status', 'GC not available. Run Chrome with --enable-precise-memory-info --expose-gc', 'warning');
+            }
+        }
+
+        // Tree View Memory Test
+        function createTreeView() {
+            const container = document.getElementById('tree-test-container');
+            const treeId = 'tree-' + Date.now();
+            
+            const treeDiv = document.createElement('div');
+            treeDiv.id = treeId;
+            treeDiv.innerHTML = `
+                <div class="tree-container" 
+                     x-data="testTreeViewData()" 
+                     x-init="$el._treeInstance = $data; init();"
+                     @destroy.window="if ($el._treeInstance) $el._treeInstance.destroy()">
+                     
+                    <div class="test-controls" style="margin-bottom: 10px;">
+                        <input x-model="searchTerm" @input="filterTree()" placeholder="Search..." style="padding: 4px; margin-right: 10px;">
+                        <button @click="expandAll()" class="btn" style="font-size: 12px; padding: 4px 8px;">Expand All</button>
+                        <button @click="collapseAll()" class="btn" style="font-size: 12px; padding: 4px 8px;">Collapse All</button>
+                    </div>
+                    
+                    <div class="tree-items">
+                        <template x-for="(item, index) in items" :key="index">
+                            <div class="tree-item" 
+                                 @click="toggleNode(index)" 
+                                 :class="{ 'expanded': expandedNodes.has(index) }"
+                                 x-show="!searchTerm || item.name.toLowerCase().includes(searchTerm.toLowerCase())">
+                                <span x-text="item.name"></span>
+                                <div x-show="expandedNodes.has(index)" class="ml-4">
+                                    <template x-for="child in item.children" :key="child.id">
+                                        <div class="tree-item" x-text="child.name"></div>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(treeDiv);
+            testData.treeViews.push(treeId);
+            
+            showStatus('tree-status', `Created tree view ${treeId}. Total: ${testData.treeViews.length}`, 'success');
+            updateMemoryStats();
+        }
+
+        function destroyTreeView() {
+            if (testData.treeViews.length === 0) {
+                showStatus('tree-status', 'No tree views to destroy', 'warning');
+                return;
+            }
+            
+            const treeId = testData.treeViews.pop();
+            const treeElement = document.getElementById(treeId);
+            
+            if (treeElement) {
+                // Trigger Alpine.js cleanup
+                if (treeElement._treeInstance && treeElement._treeInstance.destroy) {
+                    treeElement._treeInstance.destroy();
+                }
+                
+                // Dispatch destroy event
+                treeElement.dispatchEvent(new Event('destroy'));
+                
+                // Remove from DOM
+                treeElement.remove();
+                
+                showStatus('tree-status', `Destroyed tree view ${treeId}. Remaining: ${testData.treeViews.length}`, 'success');
+                updateMemoryStats();
+            }
+        }
+
+        function massCreateDestroy() {
+            showStatus('tree-status', 'Starting mass create/destroy test...', 'warning');
+            
+            let created = 0;
+            const total = 100;
+            
+            const createInterval = setInterval(() => {
+                createTreeView();
+                created++;
+                
+                if (created >= total) {
+                    clearInterval(createInterval);
+                    
+                    // Wait a bit, then destroy all
+                    setTimeout(() => {
+                        const destroyInterval = setInterval(() => {
+                            destroyTreeView();
+                            
+                            if (testData.treeViews.length === 0) {
+                                clearInterval(destroyInterval);
+                                showStatus('tree-status', 'Mass create/destroy test completed!', 'success');
+                                updateMemoryStats();
+                            }
+                        }, 10);
+                    }, 1000);
+                }
+            }, 10);
+        }
+
+        // Error Testing
+        function triggerJSError() {
+            try {
+                // This will cause a ReferenceError
+                nonExistentFunction();
+            } catch (error) {
+                // Trigger global error handler
+                setTimeout(() => { throw error; }, 0);
+            }
+            showStatus('error-status', 'JavaScript error triggered', 'error');
+        }
+
+        function triggerNetworkError() {
+            fetch('/non-existent-endpoint')
+                .catch(error => {
+                    console.error('Network error:', error);
+                });
+            showStatus('error-status', 'Network error triggered', 'error');
+        }
+
+        function triggerPermissionError() {
+            const error = new Error('Permission denied: Access to resource forbidden');
+            setTimeout(() => { throw error; }, 0);
+            showStatus('error-status', 'Permission error triggered', 'error');
+        }
+
+        function triggerValidationError() {
+            const error = new Error('Validation failed: Required field is missing');
+            setTimeout(() => { throw error; }, 0);
+            showStatus('error-status', 'Validation error triggered', 'error');
+        }
+
+        function clearAllErrors() {
+            if (window.globalErrorHandler) {
+                window.globalErrorHandler.clearNotifications();
+            }
+            showStatus('error-status', 'All error notifications cleared', 'success');
+        }
+
+        // Fetch Abort Controller Test
+        function startMultipleRequests() {
+            const statusDiv = document.getElementById('request-status');
+            statusDiv.innerHTML = 'Starting multiple requests...';
+            
+            // Clear previous requests
+            testData.activeRequests.forEach(controller => controller.abort());
+            testData.activeRequests = [];
+            
+            // Start 10 slow requests
+            for (let i = 0; i < 10; i++) {
+                const controller = new AbortController();
+                testData.activeRequests.push(controller);
+                
+                // Simulate slow endpoint
+                fetch(`/slow-endpoint-${i}`, { signal: controller.signal })
+                    .then(response => {
+                        statusDiv.innerHTML += `<br>Request ${i} completed`;
+                    })
+                    .catch(error => {
+                        if (error.name === 'AbortError') {
+                            statusDiv.innerHTML += `<br>Request ${i} aborted`;
+                        } else {
+                            statusDiv.innerHTML += `<br>Request ${i} failed: ${error.message}`;
+                        }
+                    });
+            }
+            
+            statusDiv.innerHTML += `<br>${testData.activeRequests.length} requests started`;
+        }
+
+        function cancelAllRequests() {
+            testData.activeRequests.forEach(controller => controller.abort());
+            document.getElementById('request-status').innerHTML += '<br>All requests cancelled';
+            testData.activeRequests = [];
+        }
+
+        // Performance Monitoring
+        function updatePerformanceStats() {
+            const stats = document.getElementById('performance-stats');
+            
+            const navigation = performance.getEntriesByType('navigation')[0];
+            if (navigation) {
+                stats.innerHTML = `
+                    <strong>Page Load Performance:</strong><br>
+                    DOM Content Loaded: ${Math.round(navigation.domContentLoadedEventEnd)} ms<br>
+                    Load Complete: ${Math.round(navigation.loadEventEnd)} ms<br>
+                    <br>
+                    <strong>Resource Count:</strong><br>
+                    Total Resources: ${performance.getEntriesByType('resource').length}<br>
+                    Images: ${performance.getEntriesByType('resource').filter(r => r.initiatorType === 'img').length}<br>
+                    Scripts: ${performance.getEntriesByType('resource').filter(r => r.initiatorType === 'script').length}<br>
+                `;
+            }
+        }
+
+        // Utility Functions
+        function showStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status ${type}`;
+        }
+
+        // Test Tree View Data
+        window.testTreeViewData = function() {
+            return {
+                items: Array.from({length: 50}, (_, i) => ({
+                    name: `Device ${i + 1}`,
+                    children: Array.from({length: 5}, (_, j) => ({
+                        id: `${i}-${j}`,
+                        name: `Parameter ${j + 1}`
+                    }))
+                })),
+                expandedNodes: new Set(),
+                searchTerm: '',
+                observer: null,
+                searchTimeout: null,
+                
+                init() {
+                    console.log('Test tree view initialized');
+                    
+                    // Setup intersection observer for testing
+                    this.observer = new IntersectionObserver(() => {});
+                    
+                    // Test observer on some elements
+                    const items = this.$el.querySelectorAll('.tree-item');
+                    items.forEach(item => this.observer.observe(item));
+                },
+                
+                toggleNode(index) {
+                    if (this.expandedNodes.has(index)) {
+                        this.expandedNodes.delete(index);
+                    } else {
+                        this.expandedNodes.add(index);
+                    }
+                },
+                
+                expandAll() {
+                    this.items.forEach((_, index) => {
+                        this.expandedNodes.add(index);
+                    });
+                },
+                
+                collapseAll() {
+                    this.expandedNodes.clear();
+                },
+                
+                filterTree() {
+                    clearTimeout(this.searchTimeout);
+                    this.searchTimeout = setTimeout(() => {
+                        // Simulate search filtering
+                        console.log('Filtering with term:', this.searchTerm);
+                    }, 300);
+                },
+                
+                destroy() {
+                    console.log('Test tree view destroyed');
+                    
+                    // Cleanup observer
+                    if (this.observer) {
+                        this.observer.disconnect();
+                        this.observer = null;
+                    }
+                    
+                    // Clear timeout
+                    if (this.searchTimeout) {
+                        clearTimeout(this.searchTimeout);
+                        this.searchTimeout = null;
+                    }
+                    
+                    // Clear collections
+                    this.expandedNodes.clear();
+                }
+            };
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateMemoryStats();
+            updatePerformanceStats();
+            
+            // Update stats periodically
+            setInterval(updateMemoryStats, 5000);
+            
+            console.log('Memory leak test page loaded');
+            console.log('Available debugging commands:');
+            console.log('- window.debugErrors.getStats() - Get error statistics');
+            console.log('- window.debugErrors.simulateError(type) - Simulate an error');
+            console.log('- updateMemoryStats() - Refresh memory statistics');
+        });
+    </script>
+</body>
+</html>

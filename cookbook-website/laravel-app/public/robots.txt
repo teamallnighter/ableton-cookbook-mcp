@@ -1,0 +1,35 @@
+# Ableton Cookbook - robots.txt
+# Allow all crawlers access to public content
+
+User-agent: *
+Allow: /
+
+# Disallow private areas
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /profile/
+Disallow: /api/
+Disallow: /livewire/
+Disallow: /storage/private/
+Disallow: /login
+Disallow: /register
+Disallow: /password/
+Disallow: /email/
+Disallow: /upload
+
+# Allow specific bot access to important pages
+User-agent: Googlebot
+Allow: /
+Allow: /racks/
+Allow: /users/
+
+User-agent: Bingbot
+Allow: /
+Allow: /racks/
+Allow: /users/
+
+# Crawl delay for all bots
+Crawl-delay: 1
+
+# Sitemap location
+Sitemap: /sitemap.xml

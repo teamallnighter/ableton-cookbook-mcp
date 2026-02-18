@@ -1,0 +1,710 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Ableton Cookbook API",
+        "description": "API documentation for the Ableton Cookbook - Share and discover Ableton Live racks",
+        "contact": {
+            "email": "admin@ableton.recipes"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "https://ableton.recipes",
+            "description": "Ableton Cookbook API Server"
+        },
+        {
+            "url": "http://localhost:8000",
+            "description": "Development Server"
+        }
+    ],
+    "paths": {
+        "/api/v1/racks": {
+            "get": {
+                "tags": [
+                    "Racks"
+                ],
+                "summary": "Get a list of racks",
+                "description": "Retrieve a paginated list of published racks with optional filtering and sorting",
+                "operationId": "getRacks",
+                "parameters": [
+                    {
+                        "name": "filter[rack_type]",
+                        "in": "query",
+                        "description": "Filter by rack type (instrument, audio_effect, midi_effect)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "instrument",
+                                "audio_effect",
+                                "midi_effect"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "filter[user_id]",
+                        "in": "query",
+                        "description": "Filter by user ID",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "filter[tags]",
+                        "in": "query",
+                        "description": "Filter by tags (comma-separated)",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "filter[rating]",
+                        "in": "query",
+                        "description": "Filter by minimum rating",
+                        "required": false,
+                        "schema": {
+                            "type": "number",
+                            "format": "float",
+                            "maximum": 5,
+                            "minimum": 0
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "Sort by field (prefix with - for descending)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "-created_at",
+                                "created_at",
+                                "-downloads_count",
+                                "downloads_count",
+                                "-average_rating",
+                                "average_rating",
+                                "-views_count",
+                                "views_count"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "description": "Items per page",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 20,
+                            "maximum": 100,
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            }
+                                        },
+                                        "current_page": {
+                                            "type": "integer"
+                                        },
+                                        "per_page": {
+                                            "type": "integer"
+                                        },
+                                        "total": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Racks"
+                ],
+                "summary": "Upload a new rack",
+                "description": "Create a new rack by uploading an Ableton device group (.adg) file",
+                "operationId": "createRack",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "file",
+                                    "title"
+                                ],
+                                "properties": {
+                                    "file": {
+                                        "description": "Ableton device group (.adg) file",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "title": {
+                                        "description": "Rack title",
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "description": {
+                                        "description": "Rack description",
+                                        "type": "string",
+                                        "maxLength": 1000
+                                    },
+                                    "tags": {
+                                        "description": "Tags for the rack",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "maxLength": 50
+                                        },
+                                        "maxItems": 10
+                                    },
+                                    "is_public": {
+                                        "description": "Whether the rack is public",
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Rack created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "rack": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Duplicate rack file",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "rack": {
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error or processing failed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/racks/{id}": {
+            "get": {
+                "tags": [
+                    "Racks"
+                ],
+                "summary": "Get a specific rack",
+                "description": "Retrieve details of a specific rack by ID",
+                "operationId": "getRack",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Rack ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Rack not found"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Racks"
+                ],
+                "summary": "Update a rack",
+                "description": "Update rack details (owner only)",
+                "operationId": "updateRack",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Rack ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "maxLength": 1000
+                                    },
+                                    "is_public": {
+                                        "type": "boolean"
+                                    },
+                                    "tags": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "maxLength": 50
+                                        },
+                                        "maxItems": 10
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Rack updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden - not the owner"
+                    },
+                    "404": {
+                        "description": "Rack not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Racks"
+                ],
+                "summary": "Delete a rack",
+                "description": "Delete a rack (owner only)",
+                "operationId": "deleteRack",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Rack ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Rack deleted successfully"
+                    },
+                    "403": {
+                        "description": "Forbidden - not the owner"
+                    },
+                    "404": {
+                        "description": "Rack not found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/racks/trending": {
+            "get": {
+                "tags": [
+                    "Racks"
+                ],
+                "summary": "Get trending racks",
+                "description": "Retrieve racks that are currently trending",
+                "operationId": "getTrendingRacks",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Number of results to return",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 20,
+                            "maximum": 50,
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/racks/featured": {
+            "get": {
+                "tags": [
+                    "Racks"
+                ],
+                "summary": "Get featured racks",
+                "description": "Retrieve racks that are featured by administrators",
+                "operationId": "getFeaturedRacks",
+                "parameters": [
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Number of results to return",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 20,
+                            "maximum": 50,
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/racks/{id}/like": {
+            "post": {
+                "tags": [
+                    "Racks"
+                ],
+                "summary": "Toggle like on a rack",
+                "description": "Like or unlike a rack",
+                "operationId": "toggleLikeRack",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Rack ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Like toggled successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "liked": {
+                                            "type": "boolean"
+                                        },
+                                        "likes_count": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/racks/{id}/download": {
+            "post": {
+                "tags": [
+                    "Racks"
+                ],
+                "summary": "Download a rack",
+                "description": "Track a rack download and return download URL",
+                "operationId": "downloadRack",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Rack ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Download initiated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "download_url": {
+                                            "type": "string"
+                                        },
+                                        "filename": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/users/{user}": {
+            "get": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get user profile",
+                "description": "Retrieve detailed user profile information including follower counts",
+                "operationId": "getUserProfile",
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "description": "User ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User profile retrieved successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer",
+                                                    "example": 1
+                                                },
+                                                "name": {
+                                                    "type": "string",
+                                                    "example": "John Doe"
+                                                },
+                                                "email": {
+                                                    "type": "string",
+                                                    "example": "john@example.com"
+                                                },
+                                                "followers_count": {
+                                                    "type": "integer",
+                                                    "example": 42
+                                                },
+                                                "following_count": {
+                                                    "type": "integer",
+                                                    "example": 15
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "User not found"
+                    }
+                }
+            }
+        },
+        "/api/v1/users/{user}/follow": {
+            "post": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Follow a user",
+                "description": "Follow another user to see their content in your feed",
+                "operationId": "followUser",
+                "parameters": [
+                    {
+                        "name": "user",
+                        "in": "path",
+                        "description": "User ID to follow",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User followed successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "User followed successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication required"
+                    },
+                    "403": {
+                        "description": "Cannot follow yourself"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "session": {
+                "type": "apiKey",
+                "description": "Laravel session authentication",
+                "name": "laravel_session",
+                "in": "cookie"
+            },
+            "sanctum": {
+                "type": "http",
+                "description": "Laravel Sanctum token authentication. Use format: Bearer {your-token}",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Racks",
+            "description": "API Endpoints for managing Ableton Live racks"
+        },
+        {
+            "name": "Users",
+            "description": "API Endpoints for user profiles and social features"
+        }
+    ],
+    "security": [
+        {
+            "sanctum": []
+        }
+    ]
+}

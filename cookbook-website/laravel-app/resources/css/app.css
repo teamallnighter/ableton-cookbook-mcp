@@ -1,0 +1,152 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+[x-cloak] {
+    display: none;
+    .badge-tag-small {
+        @apply px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700 border border-gray-200;
+    }
+
+}
+
+/* Clean, Simple Design System */
+@layer components {
+    /* Skip Link for Accessibility */
+    .skip-link {
+        @apply fixed top-[-100px] left-4 z-50 px-4 py-2 bg-black text-white font-medium text-sm rounded shadow-lg transition-all duration-200;
+    }
+    
+    .skip-link:focus {
+        @apply top-4;
+    }
+    
+    /* Primary Button */
+    .btn-primary {
+        @apply px-4 py-2 bg-white text-black font-medium text-sm rounded border-2 border-black hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2;
+    }
+    
+    /* Secondary Button */
+    .btn-secondary {
+        @apply px-4 py-2 bg-white text-black font-medium text-sm rounded border-2 border-black hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2;
+    }
+    
+    /* Danger Button */
+    .btn-danger {
+        @apply px-4 py-2 bg-white text-black font-medium text-sm rounded border-2 border-black hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2;
+    }
+    
+    /* Input Field */
+    .input-field {
+        @apply w-full px-4 py-2 bg-white border-2 border-black text-black rounded focus:ring-2 focus:ring-black focus:border-black focus:outline-none placeholder-gray-500;
+    }
+    
+    /* Card Component - white background, thick black border */
+    .card {
+        @apply bg-white border-2 border-black rounded-lg shadow-md;
+    }
+    
+    /* Card Header */
+    .card-header {
+        @apply p-4 border-b-2 border-black;
+    }
+    
+    /* Card Body */
+    .card-body {
+        @apply p-4;
+    }
+    
+    /* Links - black with underline */
+    .link {
+        @apply text-black underline hover:no-underline;
+    }
+    
+    /* Edition badges - vibrant colors */
+    .edition-suite {
+        @apply px-3 py-1 text-xs font-medium rounded-full bg-vibrant-blue text-white;
+    }
+    
+    .edition-standard {
+        @apply px-3 py-1 text-xs font-medium rounded-full bg-vibrant-green text-white;
+    }
+    
+    .edition-intro {
+
+    /* Ableton SVG badges - using SVG icons */
+    .ableton-edition-svg {
+        @apply inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded bg-white border;
+    }
+    /* Enhanced Edition badges with Font Awesome icons */
+    .edition-suite .fa-kit.fa-circle-ableton {
+        @apply text-orange-500;
+    }
+    
+    .edition-standard .fa-kit.fa-circle-ableton {
+        @apply text-blue-500;
+    }
+    
+    .edition-intro .fa-kit.fa-circle-ableton {
+        @apply text-gray-500;
+    }
+
+    
+    .ableton-intro-svg {
+        @apply inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded bg-yellow-50 border border-yellow-200 text-yellow-800;
+    }
+    
+    .ableton-standard-svg {
+        @apply inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded bg-blue-50 border border-blue-200 text-blue-800;
+    }
+    
+    .ableton-suite-svg {
+        @apply inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded bg-pink-50 border border-pink-200 text-pink-800;
+    }
+
+        @apply px-3 py-1 text-xs font-medium rounded-full bg-vibrant-orange text-white;
+    }
+    
+    /* Category and tag badges - vibrant colors */
+    .badge-category {
+        @apply px-3 py-1 text-xs font-medium rounded-full bg-vibrant-purple text-white;
+    }
+    
+    .badge-tag {
+        @apply px-3 py-1 text-xs font-medium rounded-full bg-vibrant-red text-white;
+    }
+    
+    /* Favorite button - outline heart, hot pink when active */
+    .favorite-btn {
+        @apply text-black hover:text-favorite-pink transition-colors cursor-pointer;
+    }
+    
+    .favorite-btn.active {
+        @apply text-favorite-pink;
+    }
+    
+    /* Star rating - outline stars, yellow when active */
+    .star-btn {
+        @apply text-black hover:text-star-yellow transition-colors cursor-pointer;
+    }
+    
+    .star-btn.active {
+        @apply text-star-yellow;
+    }
+    
+    /* Download button - simple outline */
+    .download-btn {
+        @apply text-black hover:text-gray-600 transition-colors cursor-pointer;
+    }
+    
+    /* Device and chain icons - simple black */
+    .device-icon {
+        @apply w-6 h-6 text-black;
+    }
+    
+    .chain-icon {
+        @apply w-6 h-6 text-black;
+    }
+    .badge-tag-small {
+        @apply px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700 border border-gray-200;
+    }
+
+}
