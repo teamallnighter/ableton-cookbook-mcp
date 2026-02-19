@@ -98,6 +98,8 @@ class ProcessRackFileJob implements ShouldQueue
     private function analyzeExistingRack(string $filePath, RackProcessingService $processingService): array
     {
         $startTime = microtime(true);
+        $analysisData = [];
+        $isDrumRack = false;
 
         try {
             // Check if it's a drum rack
@@ -113,13 +115,30 @@ class ProcessRackFileJob implements ShouldQueue
 
                 if ($analysisResult['success']) {
                     $data = $analysisResult['data'];
+                    $analysisData = $data;
+
+                    // Convert drum chains to general format for storage
+                    $drumChains = $data['drum_chains'] ?? [];
+                    $devices = [];
+                    $chains = [];
+
+                    foreach ($drumChains as $chain) {
+                        $chains[] = $chain;
+                        if (isset($chain['devices'])) {
+                            $devices = array_merge($devices, $chain['devices']);
+                        }
+                    }
 
                     // Update rack with drum rack analysis results
                     $this->rack->update([
                         'rack_type' => 'drum_rack',
                         'category' => 'drums',
+                        'device_count' => count($devices),
+                        'chain_count' => count($chains),
                         'ableton_version' => $data['ableton_version'] ?? null,
                         'macro_controls' => $data['macro_controls'] ?? [],
+                        'devices' => $devices,
+                        'chains' => $chains,
                         'version_details' => $data['version_details'] ?? [],
                         'parsing_errors' => $data['parsing_errors'] ?? [],
                         'parsing_warnings' => $data['parsing_warnings'] ?? [],
@@ -138,6 +157,7 @@ class ProcessRackFileJob implements ShouldQueue
                 }
 
                 $analysisResult = $analyzer::parseChainsAndDevices($xml, $filePath);
+                $analysisData = $analysisResult;
 
                 if ($analysisResult) {
                     // Update rack with analysis results  
@@ -159,12 +179,45 @@ class ProcessRackFileJob implements ShouldQueue
                 }
             }
 
+            // Generate D2 diagrams for the rack
+            try {
+                $d2Service = app(\App\Services\D2DiagramService::class);
+                $rackData = [
+                    'uuid' => $this->rack->uuid,
+                    'title' => $this->rack->title,
+                    'rack_type' => $this->rack->rack_type,
+                    'devices' => $this->rack->devices,
+                    'chains' => $this->rack->chains,
+                    'macro_controls' => $this->rack->macro_controls,
+                    'analysis' => $analysisData
+                ];
+
+                if ($isDrumRack) {
+                    $d2Service->generateDrumRackDiagram($rackData, [
+                        'style' => 'sketch',
+                        'include_tooltips' => true,
+                        'show_performance' => true
+                    ]);
+                } else {
+                    $d2Service->generateRackDiagram($rackData, [
+                        'style' => 'technical',
+                        'include_tooltips' => true,
+                        'show_chains' => true
+                    ]);
+                }
+
+                Log::info("Generated D2 diagrams for rack: {$this->rack->uuid}");
+            } catch (Exception $e) {
+                Log::error("Failed to generate D2 diagrams for rack {$this->rack->uuid}: " . $e->getMessage());
+                // Don't fail the entire rack processing if diagram generation fails
+            }
+
             $processingTime = microtime(true) - $startTime;
 
             return [
                 'success' => true,
                 'processing_time' => $processingTime,
-                'is_drum_rack' => $isDrumRack ?? false,
+                'is_drum_rack' => $isDrumRack,
             ];
         } catch (Exception $e) {
             $this->rack->update([
