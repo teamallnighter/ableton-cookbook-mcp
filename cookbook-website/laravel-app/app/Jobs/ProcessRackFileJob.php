@@ -143,8 +143,8 @@ class ProcessRackFileJob implements ShouldQueue
                         'parsing_errors' => $data['parsing_errors'] ?? [],
                         'parsing_warnings' => $data['parsing_warnings'] ?? [],
                         'analysis_complete' => true,
-                        'status' => empty($data['parsing_errors']) ? 'approved' : 'pending',
-                        'published_at' => empty($data['parsing_errors']) ? now() : null,
+                        'status' => 'approved',
+                        'published_at' => now(),
                     ]);
                 }
             } else {
@@ -173,8 +173,8 @@ class ProcessRackFileJob implements ShouldQueue
                         'parsing_errors' => $analysisResult['parsing_errors'] ?? [],
                         'parsing_warnings' => $analysisResult['parsing_warnings'] ?? [],
                         'analysis_complete' => true,
-                        'status' => empty($analysisResult['parsing_errors']) ? 'approved' : 'pending',
-                        'published_at' => empty($analysisResult['parsing_errors']) ? now() : null,
+                        'status' => 'approved',
+                        'published_at' => now(),
                     ]);
                 }
             }
@@ -442,7 +442,7 @@ class ProcessRackFileJob implements ShouldQueue
             try {
                 $basicStatus = match ($newStatus) {
                     RackProcessingStatus::ANALYZING => 'processing',
-                    RackProcessingStatus::ANALYSIS_COMPLETE => 'pending',
+                    RackProcessingStatus::ANALYSIS_COMPLETE => 'approved',
                     RackProcessingStatus::PERMANENTLY_FAILED => 'failed',
                     default => 'processing'
                 };

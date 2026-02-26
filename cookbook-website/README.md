@@ -345,6 +345,40 @@ The platform includes a specialized **Ableton Drum Rack Analyzer** that provides
 - **SEO**: Full search engine optimization implementation
 - **Image Optimization**: Responsive image handling
 
+## 🖥️ Server Configuration Notes
+
+### Supervisor Queue Workers
+
+All four Supervisor worker programs **must** have `autostart=true` in `/etc/supervisor/conf.d/ableton-cookbook.conf`. This applies to every queue priority group:
+
+```ini
+[program:ableton-cookbook-default]
+autostart=true
+...
+
+[program:ableton-cookbook-high]
+autostart=true
+...
+
+[program:ableton-cookbook-normal]
+autostart=true
+...
+
+[program:ableton-cookbook-low]
+autostart=true
+...
+```
+
+> **Note (discovered 2026-02-26):** Without `autostart=true` on all programs, workers that are stopped (e.g. after a deploy restart) will not come back up automatically on server reboot or after a `supervisorctl reload`. This caused queued rack-processing jobs to silently pile up with no workers consuming them until a manual `supervisorctl start all` was issued.
+
+After editing the config, reload Supervisor:
+
+```bash
+sudo supervisorctl reread
+sudo supervisorctl update
+sudo supervisorctl start all
+```
+
 ## 🤝 Contributing
 
 1. Fork the repository
