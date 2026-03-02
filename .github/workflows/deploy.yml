@@ -20,7 +20,7 @@ jobs:
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
       with:
-        php-version: '8.2'
+        php-version: '8.4'
         extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, dom, filter, gd, iconv, json, mbstring, pdo
         
     - name: Setup Node.js
@@ -103,7 +103,7 @@ jobs:
           ln -nfs "$RELEASE_DIR" /var/www/ableton-cookbook/current
           
           # Reload services
-          sudo systemctl reload php8.2-fpm
+          sudo systemctl reload php8.4-fpm
           sudo supervisorctl restart ableton-cookbook-default:*
           php artisan queue:restart
           
