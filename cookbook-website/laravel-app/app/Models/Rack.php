@@ -280,7 +280,7 @@ class Rack extends Model
     /**
      * Increment download count
      */
-    public function recordDownload(?User $user = null, string $ipAddress = null): void
+    public function recordDownload(?User $user = null, ?string $ipAddress = null): void
     {
         $this->downloads()->create([
             'user_id' => $user?->id,
@@ -570,7 +570,7 @@ class Rack extends Model
     /**
      * Mark enhanced analysis as failed
      */
-    public function failEnhancedAnalysis(string $error = null): void
+    public function failEnhancedAnalysis(?string $error = null): void
     {
         $this->update([
             'enhanced_analysis_complete' => false,
