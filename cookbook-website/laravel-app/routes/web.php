@@ -22,8 +22,11 @@ Route::get('/', function () {
             ->latest('published_at')
             ->take(3)
             ->get();
-            
-        return view('racks', compact('recentBlogPosts'));
+
+        $seoMetaTags = app('App\Services\SeoService')->getHomeMetaTags();
+        $structuredData = app('App\Services\SeoService')->getStructuredData('website');
+
+        return view('racks', compact('recentBlogPosts', 'seoMetaTags', 'structuredData'));
     } catch (\Exception $e) {
         return response()->json([
             'error' => 'View loading failed',
@@ -54,11 +57,14 @@ Route::prefix('legal')->name('legal.')->controller(App\Http\Controllers\LegalCon
     Route::get('/cookies', 'cookies')->name('cookies');
 });
 
+// Favorites Route (requires authentication)
+Route::get('/favorites', [App\Http\Controllers\FavoritesController::class, 'index'])->middleware('auth')->name('favorites');
+
 // Upload routes (require authentication)
 Route::middleware('auth')->group(function () {
     Route::get('/upload', [App\Http\Controllers\RackUploadController::class, 'create'])->name('racks.upload');
     Route::post('/upload', [App\Http\Controllers\RackUploadController::class, 'store'])->name('racks.store');
-    
+
     // Edit routes (require authentication and ownership)
     // Edit routes (require authentication and ownership) - Multi-step process
     Route::get("/racks/{rack}/edit", [App\Http\Controllers\RackEditController::class, "edit"])->name("racks.edit");
@@ -110,7 +116,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin/blog')->name('admin.blog.')-
     Route::get('/{post}/edit', [App\Http\Controllers\Admin\BlogAdminController::class, 'edit'])->name('edit');
     Route::put('/{post}', [App\Http\Controllers\Admin\BlogAdminController::class, 'update'])->name('update');
     Route::delete('/{post}', [App\Http\Controllers\Admin\BlogAdminController::class, 'destroy'])->name('destroy');
-    
+
     // AJAX Routes
     Route::post('/upload-image', [App\Http\Controllers\Admin\BlogAdminController::class, 'uploadImage'])->name('upload-image');
     Route::post('/{post}/toggle-featured', [App\Http\Controllers\Admin\BlogAdminController::class, 'toggleFeatured'])->name('toggle-featured');
@@ -144,27 +150,27 @@ Route::prefix('seo')->group(function () {
 Route::middleware('auth')->group(function () {
     // Legacy analysis route (kept for backward compatibility)
     Route::get('/racks/{rack}/analysis', [App\Http\Controllers\RackUploadController::class, 'analysis'])->name('racks.analysis');
-    
+
     // New parallel processing workflow
     Route::get('/racks/{rack}/metadata', [App\Http\Controllers\RackMetadataController::class, 'create'])->name('racks.metadata');
     Route::post('/racks/{rack}/metadata', [App\Http\Controllers\RackMetadataController::class, 'store'])->name('racks.metadata.store');
-    
+
     // AJAX endpoints for real-time updates
     Route::post('/racks/{rack}/auto-save', [App\Http\Controllers\RackMetadataController::class, 'autoSave'])->name('racks.auto-save');
     Route::get('/racks/{rack}/status', [App\Http\Controllers\RackMetadataController::class, 'status'])->name('racks.status');
     Route::post('/racks/{rack}/preview-how-to', [App\Http\Controllers\RackMetadataController::class, 'previewHowTo'])->name('racks.preview-how-to');
-    
+
     // Auto-save conflict resolution and recovery routes
     Route::get('/racks/{rack}/conflicts', [App\Http\Controllers\RackMetadataController::class, 'getConflicts'])->name('racks.conflicts');
     Route::post('/racks/{rack}/resolve-conflicts', [App\Http\Controllers\RackMetadataController::class, 'resolveConflicts'])->name('racks.resolve-conflicts');
     Route::post('/racks/{rack}/auto-resolve-conflicts', [App\Http\Controllers\RackMetadataController::class, 'autoResolveConflicts'])->name('racks.auto-resolve-conflicts');
     Route::post('/racks/{rack}/connection-recovery', [App\Http\Controllers\RackMetadataController::class, 'handleConnectionRecovery'])->name('racks.connection-recovery');
-    
+
     // Job management and monitoring routes (Priority 1 fixes)
     Route::get('/racks/{rack}/progress', [App\Http\Controllers\RackMetadataController::class, 'progress'])->name('racks.progress');
     Route::post('/racks/{rack}/retry', [App\Http\Controllers\RackMetadataController::class, 'retry'])->name('racks.retry');
     Route::get('/racks/{rack}/job-details', [App\Http\Controllers\RackMetadataController::class, 'jobDetails'])->name('racks.job-details');
-    
+
     // How-to image management routes
     Route::prefix('/racks/{rack}/how-to-images')->name('racks.how-to-images.')->controller(App\Http\Controllers\HowToImageController::class)->group(function () {
         Route::get('/', 'index')->name('index');
@@ -173,11 +179,11 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{filename}', 'delete')->name('delete');
         Route::post('/batch-delete', 'batchDelete')->name('batch-delete');
     });
-    
+
     // Navigation routes
     Route::post('/racks/{rack}/proceed-to-annotation', [App\Http\Controllers\RackMetadataController::class, 'proceedToAnnotation'])->name('racks.proceed-to-annotation');
     Route::post('/racks/{rack}/quick-publish', [App\Http\Controllers\RackMetadataController::class, 'quickPublish'])->name('racks.quick-publish');
-    
+
     // Annotation workflow (unchanged)
     Route::get('/racks/{rack}/annotate', [App\Http\Controllers\RackAnnotationController::class, 'annotate'])->name('racks.annotate');
     Route::post('/racks/{rack}/annotate', [App\Http\Controllers\RackAnnotationController::class, 'saveAnnotations'])->name('racks.annotate.save');
@@ -191,7 +197,7 @@ Route::prefix('issues')->name('issues.')->group(function () {
     Route::get('/create', [App\Http\Controllers\IssueController::class, 'create'])->name('create');
     Route::post('/', [App\Http\Controllers\IssueController::class, 'store'])->name('store');
     Route::get('/{issue}', [App\Http\Controllers\IssueController::class, 'show'])->name('show');
-    
+
     // Authenticated routes
     Route::middleware('auth')->group(function () {
         Route::post('/{issue}/comments', [App\Http\Controllers\IssueController::class, 'addComment'])->name('comments.store');
@@ -204,10 +210,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/', function () {
         return redirect()->route('admin.analytics.dashboard');
     });
-    
+
     // Main admin dashboard
     Route::get('/dashboard', [App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
-    
+
     // Enhanced Analytics Dashboard Routes
     Route::prefix('analytics')->name('analytics.')->controller(App\Http\Controllers\Admin\EnhancedDashboardController::class)->group(function () {
         Route::get('/', 'index')->name('dashboard');
@@ -217,7 +223,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::post('/export', 'export')->name('export');
         Route::get('/alerts', 'alerts')->name('alerts');
         Route::get('/benchmarks', 'benchmarks')->name('benchmarks');
-        
+
         // Detailed analytics endpoints
         Route::prefix('racks')->name('racks.')->group(function () {
             Route::get('/', 'rackAnalytics')->name('index');
@@ -228,7 +234,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
             Route::get('/performance', 'rackAnalytics')->defaults('section', 'performance')->name('performance');
             Route::get('/processing', 'rackAnalytics')->defaults('section', 'processing')->name('processing');
         });
-        
+
         Route::prefix('email')->name('email.')->group(function () {
             Route::get('/', 'emailAnalytics')->name('index');
             Route::get('/newsletter', 'emailAnalytics')->defaults('section', 'newsletter')->name('newsletter');
@@ -239,7 +245,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
             Route::get('/automation', 'emailAnalytics')->defaults('section', 'automation')->name('automation');
         });
     });
-    
+
     // Issue management routes
     Route::prefix('issues')->name('issues.')->group(function () {
         Route::get('/', [App\Http\Controllers\IssueController::class, 'adminIndex'])->name('index');
@@ -261,7 +267,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::delete('/{newsletter}', [App\Http\Controllers\Admin\NewsletterController::class, 'destroy'])->name('destroy');
         Route::post('/blog/{blogPost}', [App\Http\Controllers\Admin\NewsletterController::class, 'createFromBlog'])->name('create-from-blog');
     });
-    
+
     // Phase 3 Infrastructure: Feature Flags Management
     Route::prefix('feature-flags')->name('feature-flags.')->controller(App\Http\Controllers\Admin\FeatureFlagController::class)->group(function () {
         Route::get('/', 'index')->name('index');
@@ -274,7 +280,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
         Route::get('/analytics', 'analytics')->name('analytics');
         Route::get('/export', 'export')->name('export');
     });
-    
+
     // Phase 3 Infrastructure: Monitoring Dashboard
     Route::prefix('monitoring')->name('monitoring.')->controller(App\Http\Controllers\Admin\MonitoringDashboardController::class)->group(function () {
         Route::get('/', 'index')->name('dashboard');
@@ -310,7 +316,6 @@ Route::get('/about', function () {
         'description' => 'Learn about Ableton Cookbook, a community platform for sharing Ableton Live racks and music production workflows.',
         'keywords' => 'about ableton cookbook, music production community, ableton live racks, workflow sharing',
     ]);
-    
+
     return view('about', compact('seoMetaTags'));
 })->name('about');
-

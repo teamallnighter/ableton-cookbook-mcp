@@ -22,12 +22,12 @@ class RackShow extends Component
     public $userRating = 0;
     public $hoveredStar = 0;
     public $isFavorited = false;
-    
+
     // D2 diagram properties
     public $currentDiagramStyle = 'sketch';
     public $availableStyles = ['sketch', 'technical', 'minimal', 'neon'];
     public $diagramCache = [];
-    
+
     // Report modal state
     public $showReportModal = false;
     public $reportIssueType = '';
@@ -36,22 +36,22 @@ class RackShow extends Component
     public function mount(Rack $rack)
     {
         $this->rack = $rack->load('user');
-        
+
         // Increment view count asynchronously to avoid blocking response
         IncrementRackViewsJob::dispatch($this->rack->id);
-        
+
         $this->parseRackStructure();
-        
+
         if (Auth::check()) {
             // Load user's current rating for this rack
             $userRating = RackRating::where('rack_id', $this->rack->id)
                 ->where('user_id', Auth::id())
                 ->first();
-            
+
             if ($userRating) {
                 $this->userRating = $userRating->rating;
             }
-            
+
             // Check if user has favorited this rack
             $this->isFavorited = RackFavorite::where('rack_id', $this->rack->id)
                 ->where('user_id', Auth::id())
@@ -81,7 +81,7 @@ class RackShow extends Component
 
         // Update the rack's cached rating statistics
         $this->updateRackRatingStats();
-        
+
         $this->dispatch('rating-updated');
     }
 
@@ -98,12 +98,12 @@ class RackShow extends Component
     private function updateRackRatingStats()
     {
         $ratings = RackRating::where('rack_id', $this->rack->id)->get();
-        
+
         $this->rack->update([
             'average_rating' => $ratings->avg('rating'),
             'ratings_count' => $ratings->count(),
         ]);
-        
+
         // Clear related caches
         Cache::forget("rack_structure_{$this->rack->id}");
     }
@@ -142,7 +142,7 @@ class RackShow extends Component
 
         // Increment download count
         $this->rack->increment('downloads_count');
-        
+
         // Return download response
         return response()->download(
             Storage::disk('private')->path($this->rack->file_path),
@@ -156,7 +156,7 @@ class RackShow extends Component
             $this->dispatch('show-login-modal');
             return;
         }
-        
+
         $this->showReportModal = true;
         $this->reportIssueType = '';
         $this->reportDescription = '';
@@ -191,29 +191,60 @@ class RackShow extends Component
     public function shareRack()
     {
         $url = url("/racks/{$this->rack->id}");
-        
+
         $this->dispatch('copy-to-clipboard', [
             'text' => $url,
             'message' => 'Rack URL copied to clipboard!'
         ]);
     }
 
+    public function deleteRack()
+    {
+        if (!Auth::check()) {
+            $this->dispatch('show-login-modal');
+            return;
+        }
+
+        if (Auth::id() !== $this->rack->user_id) {
+            abort(403, 'You do not have permission to delete this rack.');
+        }
+
+        // Remove the physical file from private storage
+        if ($this->rack->file_path && Storage::disk('private')->exists($this->rack->file_path)) {
+            Storage::disk('private')->delete($this->rack->file_path);
+        }
+
+        // Clear cached data for this rack
+        Cache::forget("rack_structure_{$this->rack->id}");
+        Cache::forget("drum_rack_data_{$this->rack->id}");
+
+        // Delete any related favorites
+        RackFavorite::where('rack_id', $this->rack->id)->delete();
+
+        // Delete the rack record
+        $this->rack->delete();
+
+        session()->flash('message', 'Rack deleted successfully.');
+
+        return redirect()->route('home');
+    }
+
     private function parseRackStructure()
     {
         // Cache rack structure data to avoid repeated heavy operations
         $this->rackData = Cache::remember(
-            "rack_structure_{$this->rack->id}", 
+            "rack_structure_{$this->rack->id}",
             3600, // Cache for 1 hour
-            function() {
+            function () {
                 if ($this->rack->chains) {
                     // Use stored chain data if available
-                    $chains = is_array($this->rack->chains) 
-                        ? $this->rack->chains 
+                    $chains = is_array($this->rack->chains)
+                        ? $this->rack->chains
                         : json_decode($this->rack->chains, true);
-                    
+
                     // Apply recursive flattening to all levels
                     $flattenedChains = $this->flattenAllRackStructures($chains);
-                    
+
                     return [
                         'chains' => $flattenedChains,
                         'type' => $this->rack->rack_type
@@ -223,7 +254,7 @@ class RackShow extends Component
                     $devices = is_array($this->rack->devices)
                         ? $this->rack->devices
                         : json_decode($this->rack->devices, true);
-                        
+
                     return [
                         'chains' => $this->groupDevicesIntoChains($devices),
                         'type' => $this->rack->rack_type
@@ -243,12 +274,12 @@ class RackShow extends Component
     {
         // First, flatten the main level wrapper
         $chains = $this->flattenMainWrapperLevel($chains);
-        
+
         // Then, recursively process each chain to flatten nested structures
         foreach ($chains as &$chain) {
             $chain = $this->processChainRecursively($chain);
         }
-        
+
         return $chains;
     }
 
@@ -259,23 +290,27 @@ class RackShow extends Component
     {
         // Check if we have the main wrapper pattern:
         // - Single chain containing single Audio Effect Rack device with chains
-        if (count($chains) === 1 && 
-            isset($chains[0]['devices']) && 
-            count($chains[0]['devices']) === 1) {
-            
+        if (
+            count($chains) === 1 &&
+            isset($chains[0]['devices']) &&
+            count($chains[0]['devices']) === 1
+        ) {
+
             $device = $chains[0]['devices'][0];
-            
+
             // If the single device is an Audio Effect Rack with chains, flatten it
-            if (isset($device['type']) && 
+            if (
+                isset($device['type']) &&
                 $device['type'] === 'AudioEffectGroupDevice' &&
-                isset($device['chains']) && 
-                !empty($device['chains'])) {
-                
+                isset($device['chains']) &&
+                !empty($device['chains'])
+            ) {
+
                 // Return the device's chains as the main rack chains
                 return $device['chains'];
             }
         }
-        
+
         return $chains;
     }
 
@@ -293,15 +328,17 @@ class RackShow extends Component
         $nestedChains = [];
 
         foreach ($chain['devices'] as $device) {
-            if (isset($device['type']) && 
+            if (
+                isset($device['type']) &&
                 $device['type'] === 'AudioEffectGroupDevice' &&
-                isset($device['chains']) && 
-                !empty($device['chains'])) {
-                
+                isset($device['chains']) &&
+                !empty($device['chains'])
+            ) {
+
                 // This device is an Audio Effect Rack with chains
                 // Instead of showing it as a device, promote its chains
                 $hasNestedChains = true;
-                
+
                 foreach ($device['chains'] as $nestedChain) {
                     // Recursively process nested chains
                     $nestedChains[] = $this->processChainRecursively($nestedChain);
@@ -334,7 +371,7 @@ class RackShow extends Component
             'Eq8' => 'EQ Eight',
             'AudioEffectGroupDevice' => 'Audio Effect Rack',
         ];
-        
+
         // Use type-based mapping first, then standard_name as fallback
         if (isset($device['type']) && isset($deviceNameMap[$device['type']])) {
             $device['display_name'] = $deviceNameMap[$device['type']];
@@ -343,7 +380,7 @@ class RackShow extends Component
         } else {
             $device['display_name'] = $device['name'] ?? 'Unknown Device';
         }
-        
+
         return $device;
     }
 
@@ -368,22 +405,22 @@ class RackShow extends Component
                 $filePath = Storage::disk('private')->path($this->rack->file_path);
                 $xml = \App\Services\AbletonRackAnalyzer\AbletonRackAnalyzer::decompressAndParseAbletonFile($filePath);
                 $analysis = \App\Services\AbletonRackAnalyzer\AbletonRackAnalyzer::parseChainsAndDevices($xml, $this->rack->title, false);
-                
+
                 if ($analysis && isset($analysis['chains'])) {
                     // Apply recursive flattening to analyzed data
                     $flattenedChains = $this->flattenAllRackStructures($analysis['chains']);
-                    
+
                     $rackData = [
                         'chains' => $flattenedChains,
                         'type' => $this->rack->rack_type
                     ];
-                    
+
                     // Update the rack with analyzed data for future use
                     $this->rack->update([
                         'chains' => json_encode($flattenedChains),
                         'devices' => json_encode($this->flattenDevices($flattenedChains))
                     ]);
-                    
+
                     return $rackData;
                 } else {
                     return [
@@ -431,12 +468,12 @@ class RackShow extends Component
             $this->drumRackData = Cache::remember(
                 "drum_rack_data_{$this->rack->id}",
                 3600, // Cache for 1 hour
-                function() {
+                function () {
                     try {
                         if (Storage::disk('private')->exists($this->rack->file_path)) {
                             $drumAnalyzer = app(DrumRackAnalyzerService::class);
                             $filePath = Storage::disk('private')->path($this->rack->file_path);
-                            
+
                             $result = $drumAnalyzer->analyzeDrumRack($filePath, [
                                 'include_performance' => true,
                                 'verbose' => false
@@ -449,7 +486,6 @@ class RackShow extends Component
 
                         // Fallback: try to convert general rack data to drum format
                         return $this->convertGeneralRackToDrumFormat();
-
                     } catch (\Exception $e) {
                         // Log error but don't break the UI
                         \Log::warning("Failed to analyze drum rack {$this->rack->id}: " . $e->getMessage());
@@ -468,7 +504,7 @@ class RackShow extends Component
     private function convertGeneralRackToDrumFormat()
     {
         $rackData = $this->rackData ?? ['chains' => []];
-        
+
         return [
             'drum_rack_name' => $this->rack->title,
             'rack_type' => 'drum_rack',
@@ -488,11 +524,11 @@ class RackShow extends Component
     private function convertChainsTodrumChains($chains)
     {
         $drumChains = [];
-        
+
         foreach ($chains as $index => $chain) {
             $drumChains[] = [
                 'name' => $chain['name'] ?? "Pad " . ($index + 1),
-                'devices' => array_map(function($device) {
+                'devices' => array_map(function ($device) {
                     return [
                         'type' => $device['type'] ?? 'Unknown',
                         'name' => $device['display_name'] ?? $device['name'] ?? 'Unknown Device',
@@ -518,7 +554,7 @@ class RackShow extends Component
                 ]
             ];
         }
-        
+
         return $drumChains;
     }
 
@@ -531,7 +567,7 @@ class RackShow extends Component
         $activePads = 0;
         $chainedPads = 0;
         $sampleBasedPads = 0;
-        
+
         foreach ($chains as $chain) {
             $devices = $chain['devices'] ?? [];
             if (!empty($devices)) {
@@ -539,7 +575,7 @@ class RackShow extends Component
                 if (count($devices) > 1) {
                     $chainedPads++;
                 }
-                
+
                 foreach ($devices as $device) {
                     if (in_array($device['type'] ?? '', ['Sampler', 'Simpler', 'Impulse'])) {
                         $sampleBasedPads++;
@@ -548,7 +584,7 @@ class RackShow extends Component
                 }
             }
         }
-        
+
         return [
             'total_pads' => $totalPads,
             'active_pads' => $activePads,
@@ -569,7 +605,7 @@ class RackShow extends Component
             $this->diagramCache = [];
         }
     }
-    
+
     /**
      * Get D2 diagram for current rack
      */
@@ -579,21 +615,21 @@ class RackShow extends Component
         if (isset($this->diagramCache[$this->currentDiagramStyle])) {
             return $this->diagramCache[$this->currentDiagramStyle];
         }
-        
+
         try {
             $rackProcessor = app(RackProcessingService::class);
             $diagram = $rackProcessor->getRackDiagram($this->rack, $this->currentDiagramStyle, 'svg');
-            
+
             // Cache the result
             $this->diagramCache[$this->currentDiagramStyle] = $diagram;
-            
+
             return $diagram;
         } catch (\Exception $e) {
             \Log::error("Failed to get D2 diagram for rack {$this->rack->uuid}: " . $e->getMessage());
             return null;
         }
     }
-    
+
     /**
      * Get ASCII diagram for sharing
      */
@@ -607,7 +643,7 @@ class RackShow extends Component
             return null;
         }
     }
-    
+
     /**
      * Copy ASCII diagram to clipboard (JavaScript will handle this)
      */
@@ -615,15 +651,15 @@ class RackShow extends Component
     {
         $this->dispatch('copy-to-clipboard', ['text' => $this->getAsciiDiagram()]);
     }
-    
+
     /**
      * Check if rack should use drum rack visualization
      */
     public function isDrumRack(): bool
     {
-        return $this->rack->rack_type === 'drum_rack' || 
-               $this->rack->category === 'drums' ||
-               ($this->drumRackData && count($this->drumRackData) > 0);
+        return $this->rack->rack_type === 'drum_rack' ||
+            $this->rack->category === 'drums' ||
+            ($this->drumRackData && count($this->drumRackData) > 0);
     }
 
     public function render()
